@@ -1,0 +1,88 @@
+#!BPY
+# -*- coding: utf-8 -*-
+""" Registration info for Blender menus
+Name:	'Bioware NWN, ASCII (.mdl)...'
+Blender: 248
+Group:   'Export'
+Tip:	 'Export a Neverwinter Nights model'
+"""
+
+
+__author__ = 'Erik Yliää'
+__version__ = '0.1'
+#__url__ = ["No url"]
+__email__ = ["Erik Ylipää, erik.ylipaa:gmail*com"]
+__bpydoc__ = """\
+
+This is an export script for Bioware Neverwinter Nights ASCII models.
+It will export the selected aurabase objects with all their child objects 
+to the selected output directory.
+
+ Shortcuts:<br>
+   Esc or Q: quit.<br>
+
+ Supported:<br>
+   Exports most values correctly, as long as the porperties are named correctly. 
+   Animations are not implemented yet.
+
+ Known issues:<br>
+   Animations are not supported yet
+"""
+
+import Blender
+from Blender import Window, Scene, Object, Image, Mathutils, Ipo, Modifier, Armature, Constraint
+from event_handler import *
+from aurora_link import *
+from aurora_widgets import *
+from borealis_export import *
+				
+class BorealisExportGui:
+	def __init__(self):
+		self.panel = Panel("Root Export Panel", 1,1, widget_size = (200,20), padding=(5,20))
+		self.bases_panel = Panel("Aurabases", 1, 1)
+		self.panel.add(self.bases_panel)
+		bases = AuroraLink.get_aurabases()
+
+		self.bases_panel.add(TextLabel("Export selected Aurabases"))
+		#adds a toggle for every aurabase in the scene
+		for base in bases:
+			self.bases_panel.add(Toggle(base.name))
+
+		
+
+
+		self.execute_panel = Panel("Execute Export", 2 ,1)
+		self.panel.add(self.execute_panel)
+
+		self.execute_panel.add(TextLabel("Output Directory"))
+		self.execute_panel.add(DirectoryBrowser("Output: "))
+		self.execute_panel.add(Toggle("Export animations"))
+		self.execute_panel.add(Button("Export selected Aurabases"))
+		self.execute_panel.add(Button("Cancel"))
+		
+
+	def gui(self):
+
+		self.panel.update()
+		size = Blender.Window.GetAreaSize()
+		self.panel.draw(0, 0, size[0], size[1])
+		
+	def system_events(self, evt, val):
+		Draw.Redraw(1)
+
+		if evt == Draw.ESCKEY or evt == Draw.QKEY:
+			stop = Draw.PupMenu("OK?%t|Stop script %x1")
+			if stop == 1:
+				print "Stopping NWN Tools Script"
+				Draw.Exit()
+				return
+
+	def widget_events(self, evt):
+
+		Draw.Redraw()
+		if evt > 0:
+			EventHandler.get_widget(evt).handle_event() #EventHandler.get_widget returns the widget with the event value evt
+
+gui_object = BorealisExportGui()
+
+Draw.Register(gui_object.gui, gui_object.system_events, gui_object.widget_events)
