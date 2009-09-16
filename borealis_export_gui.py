@@ -42,30 +42,59 @@ class BorealisExportGui:
 		self.bases_panel = Panel("Aurabases", 1, 1)
 		self.panel.add(self.bases_panel)
 		bases = AuroraLink.get_aurabases()
-
-		self.bases_panel.add(TextLabel("Export selected Aurabases"))
+		self.export_bases = {}
+		self.bases_panel.add(TextLabel("Select bases to export"))
+		if not bases:
+			self.bases_panel.add(TextLabel("No Aurabase objects in the scene"))
 		#adds a toggle for every aurabase in the scene
 		for base in bases:
-			self.bases_panel.add(Toggle(base.name))
+			self.bases_panel.add(Toggle(base.name, callback=self.toggle_base_callback, callback_args=[base]))
 
+		self.directory_browser = DirectoryBrowser("Output Directory: ", size=(300, 20))
+		registry_dict = Blender.Registry.GetKey("Borealis Export", True)
+		if registry_dict:
+			if "out_dir" in registry_dict:
+				self.directory_browser.value = registry_dict["out_dir"]
 		
+		self.panel.add(self.directory_browser)
+		self.export_anims_toggle = Toggle("Export animations")
+		self.panel.add(self.export_anims_toggle)
 
-
-		self.execute_panel = Panel("Execute Export", 2 ,1)
+		self.execute_panel = Panel("Export Controls", 1 ,1, widget_size=(150,20))
 		self.panel.add(self.execute_panel)
-
-		self.execute_panel.add(TextLabel("Output Directory"))
-		self.execute_panel.add(DirectoryBrowser("Output: "))
-		self.execute_panel.add(Toggle("Export animations"))
-		self.execute_panel.add(Button("Export selected Aurabases"))
-		self.execute_panel.add(Button("Cancel"))
 		
+		self.execute_panel.add(Button("Export Selected", callback=self.export_callback))
+		self.execute_panel.add(Button("Cancel", callback=self.cancel_callback))
 
+	def export_callback(self, caller):
+		print self.export_bases
+		#save path for the
+		Blender.Registry.SetKey("Borealis Export", {"out_dir":self.directory_browser.value}, True)
+		export_ob = AuroraExporter(self.export_bases.values(), self.directory_browser.value, self.export_anims_toggle)
+		
+	def toggle_base_callback(self, caller, baseob):
+		#if the toggle has been pressed, add the base to the export dictionary
+		if caller.value == 1:
+			self.export_bases[baseob.name] = baseob
+		#if it's not active, remove it from the dictionary
+		if caller.value == 0:
+			if baseob.name in self.export_bases:
+				del self.export_bases[baseob.name]
+
+	def cancel_callback(self, caller):
+		stop = Draw.PupMenu("OK?%t|Stop script %x1")
+		if stop == 1:
+			print "Stopping NWN Tools Script"
+			Draw.Exit()
+			return
+		
 	def gui(self):
 
 		self.panel.update()
 		size = Blender.Window.GetAreaSize()
 		self.panel.draw(0, 0, size[0], size[1])
+
+	
 		
 	def system_events(self, evt, val):
 		Draw.Redraw(1)

@@ -490,10 +490,11 @@ class FileBrowser(Widget, Button):
 	"""
 	Creates a Composite widget with a stringentry and button. Pressing the button will open a fileselector window.
 	"""
-	def __init__(self, name, size = None, callback = None, callback_args = None, update_function = None, update_args = None, browse_title = None):
+	def __init__(self, name, size = None, callback = None, callback_args = None, update_function = None, update_args = None, browse_title = None, default_path = ""):
 		Widget.__init__(self, name, size, callback, callback_args, update_function, update_args)
 		self.browse_button = Button("Browse", callback = self.browse_button_callback) # a button to open a fileselector window
-		self.value = ""
+		self.value = default_path
+
 		self.browse_title = browse_title
 		
 	def update(self):
@@ -512,9 +513,9 @@ class FileBrowser(Widget, Button):
 
 	def browse_button_callback(self, caller):
 		if self.browse_title:
-			Blender.Window.FileSelector(self.fileselector_callback, self.browse_title)
+			Blender.Window.FileSelector(self.fileselector_callback, self.browse_title, self.value)
 		else:
-			Blender.Window.FileSelector(self.fileselector_callback)
+			Blender.Window.FileSelector(self.fileselector_callback, self.value)
 		
 	def fileselector_callback(self, filename_str):
 		self.value = filename_str

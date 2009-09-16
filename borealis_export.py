@@ -24,21 +24,17 @@ class AuroraExporter():
 	current_base = None
 	current_model = None
 	
-	def __init__(self,output_dir = None):
-		"""
-		Exports the selected aurabase object and all its children as filename.
-		If no filename is passed it prints the ascii model to stdout
+	def __init__(self, object_list, output_dir = None, export_animations = False):
+		""""
+		Exports the supplied list of Aurabase objects
 		"""
 
-		self.bases = AuroraLink.get_aurabases()
+		self.scene = Blender.Scene.GetCurrent()
+		self.bases = object_list
 		
-		#if no aurora base object is selected, alert the user
-		if not self.bases:
-			raise ValueError, "No Aurora base object selected"
-		
-		#the majority of the export code i executed in the export_aurabase function
+		#the majority of the export code is executed in the export_aurabase function
 		for aurabase in self.bases:
-			self.export_aurabase(aurabase)
+			self.export_aurabase(aurabase, export_animations)
 		
 		
 		## If a output directory is passed, write data to file, otherwise to console
@@ -157,22 +153,25 @@ class AuroraExporter():
 			node.properties['constraints'] = constraints_list
 		
 		if node_type == 'skin':
-			#the sum of all weights is always exactly 1 for nwn skinmeshes
+			###For now skin isn't handled at all
+			pass
+			###the sum of all weights is always exactly 1 for nwn skinmeshes
 			
-			#this is a stub, the idea is to check against the armature
-			#object what vertgrups corresponds to a bone in the model
-			#first get the armature from the armature modifier
-			armature = None
-			for mod in ob.modifiers:
-				if mod.type == Modifier.Types.ARMATURE:
-					armature = mod[Modifier.Settings.OBJECT]
+			##this is a stub, the idea is to check against the armature
+			##object what vertgrups corresponds to a bone in the model
+			##first get the armature from the armature modifier
+			#armature = None
+			#for mod in ob.modifiers:
+				#if mod.type == Modifier.Types.ARMATURE:
+					#armature = mod[Modifier.Settings.OBJECT]
 			
 			#gets all the vertgroups
 			bones_list = mesh_data.getVertGroupNames()
 			#now sort through the bones_list, remove the elements that arn't
 			#part of the model.
-			bones_list.remove(ob.name) #the weights shouldn't include the own node
-			model_nodes = [bnode.name for bnode in self.get_all_children(self.current_base)]
+			if ob.name in bones_list:
+				bones_list.remove(ob.name) #the weights shouldn't include the own node
+			model_nodes = [bnode.name for bnode in AuroraLink.get_all_children(self.current_base)]
 			for bone in bones_list:
 				if bone not in model_nodes:
 					bones_list.remove(bone)
@@ -199,7 +198,7 @@ class AuroraExporter():
 						vert.pop(key)
 					total_weight += float(value)
 					
-				print "index[%i]:" % index, total_weight
+				#print "index[%i]:" % index, total_weight
 				#if there isn't a weight assigned for this vert, one has to be assigned.
 				#for now we select the vert and raise an error
 				if not len(vert): 
@@ -377,11 +376,12 @@ class AuroraExporter():
 
 
 	def export_animations(self, aurabase):
-
+	
 		render = self.scene.getRenderingContext()
 		fps = render.fps
-		if 'animations' in aurabase.properties['nwn_props']:
-			animation_dictionary = aurabase.properties['nwn_props']['animations'].convert_to_pyobject()
+		
+		if 'animations' in aurabase.properties['aurora_properties']:
+			animation_dictionary = aurabase.properties['aurora_properties']['animations'].convert_to_pyobject()
 
 			for animation, anim_data in animation_dictionary.items():
 				#skip the rest animation
@@ -411,14 +411,14 @@ class AuroraExporter():
 					
 
 					
-					anim_node = AnimDummyNode()
+					anim_node = AnimNode()
 				
-					node_type = ob.properties['nwn_props']['node_type']
+					node_type = AuroraLink.get_aurora_value("node_type", ob)
 					
 					if node_type == 'trimesh' or node_type == 'danglymesh' or node_type == 'skin':
 						#in the animations the meshnodes seem to state trimesh, even if the
 						#corresponding geometry node is skin or danglymesh
-						anim_node = AnimTrimeshNode()
+						anim_node.node_type = node_type
 					
 					
 					anim_node.name = ob.name
@@ -508,8 +508,3 @@ class AuroraExporter():
 				nwn_anim.length = length
 				self.current_model.animations.append(nwn_anim)	
 	
-	
-	
-export = AuroraExporter()
-
-#blender_nwn.export_mdl(filename = '/home/erik/src/Models/c_allip.mdl', name = 'c_allip', supermodel = 'null', classification = 'character', animscale = 1)
