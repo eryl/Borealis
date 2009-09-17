@@ -1,11 +1,6 @@
-#allright, the script now makes the whole file lowercase, this is done in Model.__init__
-#it seems like emitters depend on case, at least when it comes to the 'update' value Fountain
-#for now I just capitalize that value. in other places it doesnt seem to matter.
-#this is while using the NWN Model Viewer, I will have to do tests with the actual game as well
-
-
-
+#!/usr/bin/python
 #sorts nodes relative to their parents
+
 def sort_nodes(node_list):
 	tmp_list = node_list[:]
 	sorted_list = []
@@ -309,7 +304,7 @@ class NodeProperties:
 		else:
 			complex_property = property
 
-		print complex_property, value
+		#print complex_property, value
 		if complex_property in NodeProperties.matrix_properties: #complex_property contains a matrix of values
 			list_str = " " + str(len(value))
 			
