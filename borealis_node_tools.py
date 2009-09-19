@@ -36,7 +36,8 @@ node_type = AuMenuNamed("Node Type", "node_type", menuitems = {"Aurora Base Node
 																	"Dangly Mesh Node" : "danglymesh",
 																	"Skin Node" : "skin",
 																	"Emitter Node" : "emitter",
-																	"Light Node" : "light"},
+																	"Light Node" : "light",
+																	"Walkmesh Node" : "aabb"},
 							default_item = "Dummy Node")
 header_panel.add(node_type)
 ### End basic node controls ###
@@ -55,8 +56,8 @@ common_mesh_buttons = Panel("Common mesh buttons", 1,1, padding = (0,5))
 common_mesh_toggles = Panel("Toggle Buttons", 1,1)
 common_mesh_toggles.add(AuFloat("Scale", "mesh/scale"))
 common_mesh_toggles.add(AuInteger("Shininess", "mesh/shininess"))
-common_mesh_toggles.add(AuToggle("Shadow", "mesh/shadow"))
-common_mesh_toggles.add(AuToggle("Render", "mesh/render"))
+common_mesh_toggles.add(AuToggle("Shadow", "mesh/shadow", default_value = 1))
+common_mesh_toggles.add(AuToggle("Render", "mesh/render", default_value = 1))
 common_mesh_toggles.add(AuToggle("Beaming", "mesh/beaming"))
 common_mesh_toggles.add(AuToggle("Rotate Texture", "mesh/rotatetexture"))
 common_mesh_toggles.add(AuToggle("Inherit Color", "mesh/inheritcolor"))
@@ -72,10 +73,16 @@ trimesh_buttons.add(TextLabel("Trimesh Tools"))
 trimesh_buttons.add(common_mesh_buttons)
 ### End Trimesh buttons ###
 
+#### Trimesh Buttons ####
+walkmesh_buttons = Panel("Walkmesh Buttons", 1, 2, padding = (0,5))
+walkmesh_buttons.add(TextLabel("Walkmesh Tools"))
+walkmesh_buttons.add(common_mesh_buttons)
+### End Trimesh buttons ###
+
 ### Dangly Mesh Tools ###
 danglymesh_panel = Panel("Dangly Mesh Buttons", 1, 2, padding = (0,5))
 danglymesh_panel.add(TextLabel("Danglymesh Tools"))
-danglymesh_panel.add(copy(common_mesh_buttons))
+danglymesh_panel.add(common_mesh_buttons)
 danglymesh_settings = Panel("Dangly Mesh Buttons", 1, 1)
 danglymesh_settings.add(AuFloat("Period", "mesh/period"))
 danglymesh_settings.add(AuFloat("Displacement", "mesh/displacement"))
@@ -85,17 +92,21 @@ danglymesh_panel.add(danglymesh_settings)
 
 ### Light Node Tools ###
 light_panel = Panel("Light Node Buttons", 1, 2, padding = (0,0))
+
+light_panel.add(AuFloat("Radius",'light/radius', min = 0, max = 10000))
+light_panel.add(AuFloat("Multiplier",'light/multiplier'))
+light_panel.add(AuInteger("Light Priority",'light/lightpriority'))
+light_panel.add(AuToggle("Fading Light",'light/fadinglight'))
+
 light_panel.add(AuColorPickerNamed("Color",'light/color'))
-light_panel.add(AuToggle("Multiplier",'light/multiplier'))
-light_panel.add(AuToggle("Radius",'light/radius'))
+
 light_panel.add(AuToggle("Ambient Only",'light/ambientonly'))
-light_panel.add(AuToggle("Is Dynamic",'light/isdynamic'))
-light_panel.add(AuToggle("Affect Dynamic",'light/affectdynamic'))
-light_panel.add(AuToggle("Light Priority",'light/lightpriority'))
 light_panel.add(AuToggle("Shadow",'light/shadow'))
 light_panel.add(AuToggle("Lensflares",'light/lensflares'))
 light_panel.add(AuToggle("Flare Radius",'light/flareradius'))
-light_panel.add(AuToggle("Fading Light",'light/fadinglight'))
+
+light_panel.add(AuToggle("Is Dynamic",'light/isdynamic'))
+light_panel.add(AuToggle("Affect Dynamic",'light/affectdynamic'))
 ### End Light Node Tools ###
 
 ### EmitterNode Panel ###
@@ -216,5 +227,6 @@ dyn_panel = AuDynamicPanel("Node Panels", 1, 1, "node_type", panel_dict = {"ligh
 																			"aurabase" : aurabase_buttons,
 																			"danglymesh" : danglymesh_panel,
 																			"dummy" : dummy_panel,
-																			"emitter" : emitter_panel})
+																			"emitter" : emitter_panel,
+																			"aabb" : walkmesh_buttons})
 header_panel.add(dyn_panel)

@@ -67,7 +67,6 @@ class Button(Widget):
 	"""
 	
 	def draw(self, x, y, width, height):
-		#print self.name, x, y
 		self.blender_widget = Draw.PushButton(self.name, self.event, x, y, width, height, "Ara")
 
 class Toggle(Widget):
@@ -75,7 +74,6 @@ class Toggle(Widget):
 	A togglebutton.
 	"""
 	def draw(self, x, y, width, height):
-		#print self.name, x, y
 		self.blender_widget = Draw.Toggle(self.name, self.event, x, y, width, height, self.value, "Ara")
 
 	def handle_event(self):
@@ -224,8 +222,6 @@ class Panel(Widget):
 		self.is_root = False
 		if not self.widget_size:
 			self.widget_size = parent.widget_size
-		print self.name, self.widget_size
-
 		#propagate to contained widgets
 		for row in self.table:
 			for cell in row:
@@ -436,7 +432,6 @@ class Panel(Widget):
 					if widget.size:
 						widget.draw(xpos, ypos - widget.size[1], *widget.size)
 					else:
-						print self
 						widget.draw(xpos, ypos - self.widget_size[1], *self.widget_size)
 					#print widget.name, xpos,ypos
 				xpos += self.column_widths[j] + padd_x #adds the current column width to the draw offset
@@ -452,12 +447,10 @@ class TogglePanel(Panel):
 		If a widget has it's own size set, it will override the panels widget_size.
 		padding will insert space between cells in the table.
 		"""
-		print "Init in TogglePanel"
 		self.toggle = Draw.Create(0)
 		self.toggle.val = toggle
 		Panel.__init__(self, name, columns, rows, widget_size, size, padding, is_root, color)
-		
-		print "Ara", self.toggle
+
 
 	def update_size(self):
 		if self.widget_size:
@@ -503,7 +496,6 @@ class FileBrowser(Widget, Button):
 
 	def draw(self, x, y, width, height):
 		browse_string_width = Draw.GetStringWidth("Browse", "normalfix") + 10
-		print self.name, self.event, x, y, width - browse_string_width, height, self.value, 128
 		self.blender_widget = Draw.String(self.name, self.event, x, y, width - browse_string_width, height, self.value, 128)
 		self.browse_button.draw(x + width - browse_string_width, y, browse_string_width, height)
 

@@ -234,14 +234,13 @@ class AuroraExporter():
 		node = borealis_mdl_interface.Node(type = node_type)
 		#handles converting all the properties to their respective nwn model values
 		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
-			print property, value
-			#property_name = property 
+			print property,value, "in node.properties? ", property in node.properties
 			##The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
-			#if property not in borealis_mdl_interface.NodeProperties.blender_handled and property in node.properties:
-				#if property in borealis_mdl_interface.NodeProperties.vector_properties:
-					#node.properties[property] = value.split()
-				#else:
-					#node.properties[property] = value
+			if property not in borealis_mdl_interface.NodeProperties.blender_handled and property in node.properties:
+				if property in borealis_mdl_interface.NodeProperties.vector_properties:
+					node.properties[property] = value.split()
+				else:
+					node.properties[property] = value
 
 		return node
 	
@@ -255,14 +254,14 @@ class AuroraExporter():
 		
 		#handles converting all the properties to their respective nwn model values
 		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
-			print property,value
-			#property_name = property 
-			##The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
-			#if property not in NodeProperties.blender_handled and property in node.properties:
-				#if property in NodeProperties.vector_properties:
-					#node.properties[property] = value.split()
-				#else:
-					#node.properties[property] = value
+			print property,value, "in node.properties? ", property in node.properties
+			#The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
+
+			if property not in NodeProperties.blender_handled and property in node.properties:
+				if property in NodeProperties.vector_properties:
+					node.properties[property] = value.split()
+				else:
+					node.properties[property] = value
 			
 		return node
 	
@@ -333,7 +332,7 @@ class AuroraExporter():
 			
 			node = borealis_mdl_interface.Node(type=node_type)
 
-			if node_type == 'trimesh' or node_type =='danglymesh' or node_type == 'skin':
+			if node_type in ['trimesh','danglymesh', 'skin', 'aabb']:
 				node = self.export_mesh(ob)
 
 			elif node_type == 'emitter':

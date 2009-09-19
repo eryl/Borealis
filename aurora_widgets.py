@@ -22,24 +22,26 @@ class AuWidget(Widget):
 	"""
 	Extended widget specialized on handling Aurora values.
 	"""
-	def __init__(self, name, aurora_property, size = None):
+	def __init__(self, name, aurora_property, size = None, default_value = 0):
 		"""
 		This widget will handle the aurora property named as the string argument aurora_property.
 		"""
 		
 		Widget.__init__(self, name, size)
 		self.value = 0
-		self.default_value = 0
+		self.default_value = default_value
 		self.aurora_property = aurora_property
 
 	def update(self):
 		value = AuroraLink.get_aurora_value(self.aurora_property)
+		print self.name,  value
 		if value:
 			self.value = value
 		else:
 			self.value = self.default_value
 
 	def handle_event(self):
+		
 		AuroraLink.set_aurora_value(self.aurora_property, self.value)
 
 class AuButton(AuWidget, Button):
@@ -52,11 +54,14 @@ class AuToggle(AuWidget, Toggle):
 	def handle_event(self):
 		self.value = self.blender_widget.val
 		AuWidget.handle_event(self)
-		
+
+	def update(self):
+		AuWidget.update(self)
+		self.value = int(self.value)
 
 class AuInteger(AuWidget, Integer):
-	def __init__(self, name, aurora_property, size = None, min = 0, max = 10):
-		AuWidget.__init__(self, name, aurora_property, size)
+	def __init__(self, name, aurora_property, size = None, default_value = 0, min = 0, max = 10):
+		AuWidget.__init__(self, name, aurora_property, size, default_value)
 		self.value = int(self.value)
 		self.min = int(min)
 		self.max = int(max)
@@ -67,10 +72,14 @@ class AuInteger(AuWidget, Integer):
 	def handle_event(self):
 		self.value = self.blender_widget.val
 		AuWidget.handle_event(self)
+
+	def update(self):
+		AuWidget.update(self)
+		self.value = int(self.value)
 		
 class AuFloat(AuWidget, Float):
-	def __init__(self, name, aurora_property, size = None, min = 0, max = 10):
-		AuWidget.__init__(self, name, aurora_property, size)
+	def __init__(self, name, aurora_property, size = None, default_value = 0, min = 0, max = 10):
+		AuWidget.__init__(self, name, aurora_property, size, default_value)
 		self.value = float(self.value)
 		self.min = float(min)
 		self.max = float(max)
@@ -82,6 +91,10 @@ class AuFloat(AuWidget, Float):
 		self.value = self.blender_widget.val
 		AuWidget.handle_event(self)
 
+	def update(self):
+		AuWidget.update(self)
+		self.value = float(self.value)
+		
 class AuStringEntry(AuWidget, StringEntry):
 	def __init__(self, name, aurora_property, size = None):
 		AuWidget.__init__(self, name, aurora_property, size)
@@ -149,6 +162,14 @@ class AuColorPicker(AuWidget, ColorPicker):
 	def handle_event(self):
 		self.value = self.blender_widget.val
 		AuWidget.handle_event(self)
+		
+	def update(self):
+		AuWidget.update(self)
+		if type(self.value) == list:
+			self.value = [float(c) for c in self.value]
+		elif type(self.value) == str:
+			self.value = [float(c) for c in self.value.split()]
+
 	
 class AuColorPickerNamed(AuColorPicker, ColorPickerNamed):
 	def draw(self, x, y, width, height):

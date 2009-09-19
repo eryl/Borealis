@@ -155,7 +155,8 @@ class NodeProperties:
 						   
 	#has multiple values on a line
 	vector_properties = ['position', 'orientation', 'mesh/wirecolor', 'mesh/ambient', 'mesh/diffuse', 'mesh/color',
-						 'mesh/specular','mesh/selfillumcolor', 'center', 'emitter/colorstart', 'emitter/colorend']
+						 'mesh/specular','mesh/selfillumcolor', 'center', 'emitter/colorstart', 'emitter/colorend',
+						 "light/color"]
 
 	#has multiple values on multiple lines
 	matrix_properties = ['mesh/verts' ,'mesh/faces', 'mesh/tverts', 'mesh/colors', 'mesh/weights', 'mesh/constraints', 'positionkey',
@@ -166,7 +167,8 @@ class NodeProperties:
 	integer_properties = ['mesh/shininess', 'mesh/faces', 'mesh/tilefade', 'mesh/beaming', 'mesh/colors',
 						  'constraints',"emitter/renderorder", "emitter/xsize", "emitter/ysize","emitter/birthrate",
 						  "emitter/xgrid", "emitter/ygrid", "emitter/fps" ,"emitter/p2p_sel", "emitter/framestart",
-						  "emitter/frameend", "emitter/p2p_bezier2", "emitter/p2p_bezier3","emitter/spawntype"]
+						  "emitter/frameend", "emitter/p2p_bezier2", "emitter/p2p_bezier3","emitter/spawntype",
+						  'light/lightpriority','light/lensflares']
 						  
 	float_properties = ['mesh/verts', 'orientation', 'position', 'mesh/tverts', 'mesh/alpha',
 						'mesh/scale', 'center', 'mesh/displacement', 'mesh/period', 'mesh/tightness',
@@ -175,19 +177,22 @@ class NodeProperties:
 						"emitter/sizestart_y", "emitter/sizeend_y", "emitter/blastradius", "emitter/blastlength",
 						"emitter/mass", "emitter/bounce_co", "emitter/lightningdelay", "emitter/lightningradius",
 						"emitter/lightningscale","emitter/deadspace", "emitter/combinetime","emitter/particlerot",
-						"emitter/threshold"]
+						"emitter/threshold",'light/multiplier','light/radius','light/flareradius']
 						
 	string_properties = ['parent', 'mesh/bitmap', "emitter/texture","emitter/update", "emitter/render",
 						"emitter/blend"]
 	
 	color_properties = ['mesh/ambient', 'mesh/diffuse', 'mesh/specular', 'mesh/selfillumcolor',
-						'mesh/setfillumcolor', 'mesh/color', "emitter/colorstart", "emitter/colorend"]
+						'mesh/setfillumcolor', 'mesh/color', "emitter/colorstart", "emitter/colorend",
+						"light/color"]
 						
 	bool_properties = ['mesh/shadow', 'mesh/rotatetexture', 'mesh/transparencyhint', 
 					   'mesh/inheritcolor', 'mesh/render', "emitter/p2p", "emitter/affectedbywind",
 					   "emitter/m_istinted","emitter/inherit_part", "emitter/inheritvel", "emitter/loop","emitter/twosidedtex", 
-						"emitter/inherit","emitter/inherit_local", "emitter/bounce", "emitter/splat","emitter/random"]
-						
+						"emitter/inherit","emitter/inherit_local", "emitter/bounce", "emitter/splat","emitter/random",
+						'light/ambientonly','light/isdynamic','light/affectdynamic','light/shadow','light/fadinglight'
+						]
+
 	special_properties = ['weights']
 
 
@@ -207,12 +212,12 @@ class NodeProperties:
 		"""
 		return_props = NodeProperties.common_properties.copy()
 		
-		if type.lower() == 'trimesh' or type.lower() == 'skin' or type.lower() == 'danglymesh':
+		if type.lower() == 'trimesh' or type.lower() == 'skin' or type.lower() == 'danglymesh' or type.lower() == "aabb":
 			return_props.update(NodeProperties.mesh_properties.copy())
 		elif type.lower() == 'emitter':
 			return_props.update(NodeProperties.emitter_properties.copy())
 		elif type.lower() == 'light':
-			return_props.update(NodeProperties.emitter_properties.copy())
+			return_props.update(NodeProperties.light_properties.copy())
 		elif type.lower() == 'animdummy':
 			return_props.update(NodeProperties.animnode_properties.copy())
 		elif type.lower() == 'animemitter':
@@ -240,7 +245,7 @@ class NodeProperties:
 		#construct the property name this class is expecting, common properties doesnt have prefixes
 		if property in NodeProperties.common_properties:
 			complex_property = property
-		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh"]):
+		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
 			complex_property = "mesh/" + property
 		elif property in NodeProperties.emitter_properties and node_type == "emitter":
 			complex_property = "emitter/" + property
@@ -295,7 +300,7 @@ class NodeProperties:
 		#construct the property name this class is expecting, common properties doesnt have prefixes
 		if property in NodeProperties.common_properties:
 			complex_property = property
-		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh"]):
+		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
 			complex_property = "mesh/" + property
 		elif property in NodeProperties.emitter_properties and node_type == "emitter":
 			complex_property = "emitter/" + property
@@ -325,7 +330,11 @@ class NodeProperties:
 		
 		else:
 			#return "".join([str(v) for v in value])
-			return str(value)
+			
+			if type(value) == list:
+				return "".join([str(v) for v in value])
+			else:
+				return str(value)
 	@staticmethod
 	def blendformat(node_type, property, value):
 		"""
@@ -340,7 +349,7 @@ class NodeProperties:
 				#construct the property name this class is expecting, common properties doesnt have prefixes
 		if property in NodeProperties.common_properties:
 			complex_property = property
-		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh"]):
+		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
 			complex_property = "mesh/" + property
 		elif property in NodeProperties.emitter_properties and node_type == "emitter":
 			complex_property = "emitter/" + property
@@ -535,7 +544,6 @@ class Node:
 		for key in self.properties.keys():
 			if self.properties[key]:
 				tmp_str += "\n  " + key + " " + str(NodeProperties.format(self.type, key, self.properties[key]))
-				#tmp_str += "\n  " + key + " " + str(self.properties[key])
 		tmp_str += "\nendnode"		
 		return tmp_str
 	
@@ -560,8 +568,8 @@ class Node:
 				#Checks if the property can be handled by this node, extract the values with the help of NodeProperties.extract
 				if first_token in self.properties:
 					#hack to take care of the selfillum/setfillum misspelling in the original bioware models
-					if first_token == "setfillum":
-						first_token == "selfillum"
+					if first_token == "setfillumcolor":
+						first_token = "selfillumcolor"
 						
 					self.properties[first_token] = NodeProperties.extract(self.type, datastream)
 

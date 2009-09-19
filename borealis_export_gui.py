@@ -37,7 +37,8 @@ from aurora_widgets import *
 from borealis_export import *
 				
 class BorealisExportGui:
-	def __init__(self):
+	def __init__(self, caller = None):
+		self.caller = caller #if this object is created within another gui, this is a reference to that gui
 		self.panel = Panel("Root Export Panel", 1,1, widget_size = (200,20), padding=(5,20))
 		self.bases_panel = Panel("Aurabases", 1, 1)
 		self.panel.add(self.bases_panel)
@@ -66,12 +67,24 @@ class BorealisExportGui:
 		self.execute_panel.add(Button("Export Selected", callback=self.export_callback))
 		self.execute_panel.add(Button("Cancel", callback=self.cancel_callback))
 
+	def run_gui(self):
+		Draw.Register(self.gui, self.system_events, self.widget_events)
+
+	def exit_gui(self):
+		if self.caller:
+			self.caller.run_gui()
+		else:
+			Draw.Exit()
+		
 	def export_callback(self, caller):
+		#We should give some feedback to the user that export is actually proceeding
 		print self.export_bases
-		#save path for the
+		#save path for the export
 		Blender.Registry.SetKey("Borealis Export", {"out_dir":self.directory_browser.value}, True)
 		export_ob = AuroraExporter(self.export_bases.values(), self.directory_browser.value, self.export_anims_toggle)
-		
+		#exit after export is done
+		self.exit_gui()
+
 	def toggle_base_callback(self, caller, baseob):
 		#if the toggle has been pressed, add the base to the export dictionary
 		if caller.value == 1:
@@ -82,10 +95,9 @@ class BorealisExportGui:
 				del self.export_bases[baseob.name]
 
 	def cancel_callback(self, caller):
-		stop = Draw.PupMenu("OK?%t|Stop script %x1")
+		stop = Draw.PupMenu("Cancel export?%t|Yes%x1")
 		if stop == 1:
-			print "Stopping NWN Tools Script"
-			Draw.Exit()
+			self.exit_gui()
 			return
 		
 	def gui(self):
@@ -93,8 +105,6 @@ class BorealisExportGui:
 		self.panel.update()
 		size = Blender.Window.GetAreaSize()
 		self.panel.draw(0, 0, size[0], size[1])
-
-	
 		
 	def system_events(self, evt, val):
 		Draw.Redraw(1)
@@ -102,9 +112,8 @@ class BorealisExportGui:
 		if evt == Draw.ESCKEY or evt == Draw.QKEY:
 			stop = Draw.PupMenu("OK?%t|Stop script %x1")
 			if stop == 1:
-				print "Stopping NWN Tools Script"
-				Draw.Exit()
-				return
+				self.exit_gui()
+				
 
 	def widget_events(self, evt):
 
@@ -112,6 +121,6 @@ class BorealisExportGui:
 		if evt > 0:
 			EventHandler.get_widget(evt).handle_event() #EventHandler.get_widget returns the widget with the event value evt
 
-gui_object = BorealisExportGui()
-
-Draw.Register(gui_object.gui, gui_object.system_events, gui_object.widget_events)
+if __name__ == "__main__":
+	gui_object = BorealisExportGui()
+	Draw.Register(gui_object.gui, gui_object.system_events, gui_object.widget_events)

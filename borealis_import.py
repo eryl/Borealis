@@ -96,12 +96,10 @@ class AuroraImporter():
 			elif node.type == "emitter":
 				ob = self.import_emitter(node)
 	
-			
 			elif node.type == 'light':
 				ob = self.import_light(node)
 	
-			
-			elif node.type == "trimesh" or node.type == "danglymesh" or node.type == "skin":
+			elif node.type == "trimesh" or node.type == "danglymesh" or node.type == "skin" or node.type == "aabb":
 				ob = self.import_mesh(node)
 				
 			else:
@@ -163,7 +161,6 @@ class AuroraImporter():
 		"""
 		Takes a nwn node-object as argument and creates a blender lamp based on the data
 		"""
-		
 		lamp = Blender.Lamp.New('Lamp', node.name)
 		lamp.R = float(node.color[0])
 		lamp.G = float(node.color[1])
@@ -350,6 +347,7 @@ class AuroraImporter():
 
 		if image:
 			mesh.addUVLayer(bitmap_name)
+
 		
 
 		#construct the vertices for the mesh
@@ -365,16 +363,21 @@ class AuroraImporter():
 		
 		faces = []
 		uvfaces = []
+		face_groups = []
 		#the faces lines in .mdl files are in the format:
 		#[v1] [v2] [v3] [smooth_group] [t1] [t2] [t3] [matid]
 		if node.faces:
 			for node_face in node.faces:
 				faces.append([int(node_face[0]), int(node_face[1]), int(node_face[2])])
+				if int(node_face[7]) not in face_groups:
+					#construct a list of all face groups
+					face_groups.append(int(node_face[7]))
 				#creates a list with actual uv vertenode_face coordinates
 				if tverts:
 					#does a quick lookup from the tverts list for every tN value
 					uvfaces.append([tverts[int(node_face[4])],tverts[int(node_face[5])],tverts[int(node_face[6])]])
-		
+
+		print node.name, face_groups
 	
 						
 		mesh.verts.extend(verts)
@@ -402,9 +405,13 @@ class AuroraImporter():
 			mat.setMode(mat.getMode()|Blender.Material.Modes['ZTRANSP'])
 		
 	
-		#Should enable texture face on material if it has uv-layers, not sure how setMode works
+		#Should enable texture face on material if it has uv-layers
 		if mesh.getUVLayerNames():
 			mat.setMode(mat.getMode()|Blender.Material.Modes['TEXFACE'])
+			texture = Blender.Texture.New(image.name + "_tex")
+			texture.setType("Image")
+			texture.setImage(image)
+			mat.setTexture(0, texture, Blender.Texture.TexCo['UV'])
 		mesh.materials += [mat]
 		
 		ob = Blender.Object.New('Mesh', node.name)
@@ -564,7 +571,7 @@ class AuroraImporter():
 
 						
 			animations_dictionary.update({animation.name : animation_dict})
-		print animations_dictionary
+		#print animations_dictionary
 		self.aurabase.properties['aurora_properties']['animations'] = animations_dictionary
 		AuroraLink.set_active_animation("rest", self.aurabase)
 			

@@ -65,17 +65,17 @@ class AuroraLink:
 			for key,value in aurora_properties.iteritems():
 				if key == name:
 					value = aurora_properties[key]
+					#print value
+					##perform formatting according to value, should be passed to a method in NodeProperties instead.
+					#if key in NodeProperties.integer_properties:
+						#value = int(value)
+					#elif key in NodeProperties.float_properties:
+						#value = float(value)
+					#elif key in NodeProperties.bool_properties:
+						#value = int(value)
 
-					#perform formatting according to value, should be passed to a method in NodeProperties instead.
-					if key in NodeProperties.integer_properties:
-						value = int(value)
-					elif key in NodeProperties.float_properties:
-						value = float(value)
-					elif key in NodeProperties.bool_properties:
-						value = int(value)
-
-					elif key in NodeProperties.color_properties:
-						value = [float(c) for c in value.split()]
+					#elif key in NodeProperties.color_properties:
+						#value = [float(c) for c in value.split()]
 
 					return value
 				
@@ -87,11 +87,12 @@ class AuroraLink:
 		"""
 		Sets a IDProperty value for the object ob. If no object is supplied, it will set the property
 		on the AuroraLink.active_object.
-		If the "aurora_properties" Property isn't set, this will create it.
+		If the "aurora_properties" Property isn't set, this will create it. All values are stored in the IDProperty as
+		strings, it's up to the user to know what to do with it.
 		"""
 		
 
-		if type(value) == list:
+		if type(value) in [list, tuple]: #formats sequences as "element element element "
 			if name in NodeProperties.vector_properties or name in NodeProperties.color_properties:
 				value = "".join([str(val) + " " for val in value])
 			elif name in NodeProperties.matrix_properties:
@@ -110,7 +111,7 @@ class AuroraLink:
 				aurora_properties = AuroraLink.get_aurora_properties(ob)
 
 			print ob, aurora_properties, name, value
-			aurora_properties[name] = value
+			aurora_properties[name] = str(value)
 
 	@staticmethod
 	def is_aurora_object(ob = None):
