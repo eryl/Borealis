@@ -117,9 +117,9 @@ emitter_panel = Panel("Emitter Panel", 1, 1, widget_size = (150, 20), padding=(0
 #Emitter Style
 emitter_style_panel = TogglePanel("Emitter Style", 2,1, toggle = 0)
 emitter_panel.add(emitter_style_panel)
-emitter_style_panel.add(AuMenuNamed("Update",'emitter/update', menuitems = {"Fountain" : "fountain", "Single" : "single", "Explosion" : "explosion", "Lighting" : "lightning"}, default_item = "Fountain"))
-emitter_style_panel.add(AuMenuNamed("Render",'emitter/render', menuitems = {"Normal" : "normal", "Linked" : "linked", "Motion Blur" : "motion_blur", "Billboard_to_World_Z":"Billboard_to_World_Z",  "Billboard_to_Local_Z":"Billboard_to_Local_Z", "Aligned_to_World_Z" :  "Aligned_to_World_Z", "Aligned_to_Particle_Dir" : "Aligned_to_Particle_Dir"}, default_item = "Normal")) #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
-emitter_style_panel.add(AuMenuNamed("Blend",'emitter/blend', menuitems = {"Normal" : "normal", "Lighten" : "lighten", "Punch" : "punch"}, default_item = "Normal"))  # [Normal | lighten]  - Unknown.
+emitter_style_panel.add(AuMenuNamed("Update",'emitter/update', menuitems = {"Fountain" : "Fountain", "Single" : "Single", "Explosion" : "Explosion", "Lighting" : "Lightning"}, default_item = "Fountain"))
+emitter_style_panel.add(AuMenuNamed("Render",'emitter/render', menuitems = {"Normal" : "Normal", "Linked" : "Linked", "Motion Blur" : "Motion_blur", "Billboard_to_World_Z":"Billboard_to_World_Z",  "Billboard_to_Local_Z":"Billboard_to_Local_Z", "Aligned_to_World_Z" :  "Aligned_to_World_Z", "Aligned_to_Particle_Dir" : "Aligned_to_Particle_Dir"}, default_item = "Normal")) #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
+emitter_style_panel.add(AuMenuNamed("Blend",'emitter/blend', menuitems = {"Normal" : "Normal", "Lighten" : "Lighten", "Punch" : "Punch"}, default_item = "Normal"))  # [Normal | lighten]  - Unknown.
 emitter_style_panel.add(AuMenuNamed("Spawn Type",'emitter/spawntype', menuitems = {"Normal" : 0, "Trail" : 1}, default_item = "Normal"))  
 
 #Emitter Parameters
