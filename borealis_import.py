@@ -117,7 +117,7 @@ class AuroraImporter():
 			
 			# parent the objects, perhaps this would be better to put in a seperate for loop
 			parent = None
-			if node.parent != "null":
+			if node.parent.lower() != "null":
 					parent = Blender.Object.Get(node.parent)
 					if parent:
 						parent.makeParent([ob])

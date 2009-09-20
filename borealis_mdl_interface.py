@@ -442,9 +442,9 @@ class Model:
 		mdl_file.close()
 
 		
-		#make the whole file lowecase
-		for i in range(len(datastream)):
-			datastream[i] = datastream[i].lower()
+		#make the whole file lowecase, uncommented for now, some values have to be capitalized, like the emitter update value
+		#for i in range(len(datastream)):
+			#datastream[i] = datastream[i].lower()
 			
 		datastream = [line.rstrip().split() for line in datastream]
 		#we traverse the file line by line, deleting lines as they are read. This method is used instead of a for-loop to allow the datastream to be passed to other functions
@@ -566,7 +566,7 @@ class Node:
 				first_token = line[0]	#reads first token from the line
 				
 				#Checks if the property can be handled by this node, extract the values with the help of NodeProperties.extract
-				if first_token in self.properties:
+				if first_token.lower() in self.properties:
 					#hack to take care of the selfillum/setfillum misspelling in the original bioware models
 					if first_token == "setfillumcolor":
 						first_token = "selfillumcolor"
