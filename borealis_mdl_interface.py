@@ -1,6 +1,20 @@
 #!/usr/bin/python
 #sorts nodes relative to their parents
 
+"""
+This module knows how to import and export a Aurora mdl file. It keeps
+a dictionary of valid properties for every element in the Model structure with 
+the class Model as the root element.
+All property values are stored as strings, list of strings or list of lists of strings.
+"""
+
+### The different ways of storing the values, as I see them is either as their target
+#datatype or always as string, making it up to the user of the value to format it.
+#keeping vector elements as strings delimited with space or as a list of elements
+#is also something to consider. Matrices will have to be treated as lists of lists, or would become unwieldly
+##property = "1 1 1\n 1 1 1"
+##
+
 def sort_nodes(node_list):
 	tmp_list = node_list[:]
 	sorted_list = []
@@ -235,62 +249,112 @@ class NodeProperties:
 		
 
 	@staticmethod
-	def extract(node_type, datastream):
+	def extract(datastream):
 		"""
 		Extracts values from the datastream according to the kind of property
 		"""
 		property = datastream[0][0] #extract the first word on the line
 		
-
-		#construct the property name this class is expecting, common properties doesnt have prefixes
-		if property in NodeProperties.common_properties:
-			complex_property = property
-		elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
-			complex_property = "mesh/" + property
-		elif property in NodeProperties.emitter_properties and node_type == "emitter":
-			complex_property = "emitter/" + property
-		elif property in NodeProperties.light_properties and node_type == 'light':
-			complex_property = "light/" + property
-		else:
-			complex_property = property
-
-		global line_count
-		
-		#if the property is a matrix (eg verts and faces) parse it here
-		if complex_property in NodeProperties.matrix_properties:
-			
-			matrix = []
-			if len(datastream[0]) == 1: #this matrix uses the endlist token instead of a number as a delimiter
+		#this works on the assumption that newlines never start with a numeral value
+		#if the next line in the datastream starts with a number, its a multi-line 
+		#(matrix-based) value
+		data = None
+		#start by peeking on the first token on the next line in the datastream
+		if datastream[1][0]: #make sure there is a token on the next line
+			if datastream[1][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): #removes any valid digit-characters ('.', '-' and 'e') from the token and checks if the result is a digit
+				#next line is a number, assume this is a matrix
+				data = []
 				del datastream[0]
-				line = datastream[0]
-				line_count += 1
-				
-				while line[0] != 'endlist':
-					matrix.append(line)
-					del datastream[0]
-					line = datastream[0]
-					line_count += 1
+				while(True):
+					data.append(datastream[0])
 					
-			else:
-				rows = int(datastream[0][1]) #how many rows does the matrix have? The value following the property
-				
-				#Since pyton counts from 0, add 1 to the rows delimiter
-				for row in datastream[1:rows+1]:
-					matrix.append(row)
+					if datastream[0][0]:
+						if not datastream[0][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): 
+						# next line is not a digit, abort
+							break
+					del datastream[0] #remove the line just added to data
 					
-				del datastream[0:rows] #leave one row for the read_node_data to delete, I'll have to figure out a better way to handle it
-				line_count += rows
-			return matrix	
+				return data
 		
+		#if we reach this point, the value is not a matrix
+		data = " ".join(datastream[0][1:-1])
+		return data
+
+		##construct the property name this class is expecting, common properties doesnt have prefixes
+		#if property in NodeProperties.common_properties:
+			#complex_property = property
+		#elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
+			#complex_property = "mesh/" + property
+		#elif property in NodeProperties.emitter_properties and node_type == "emitter":
+			#complex_property = "emitter/" + property
+		#elif property in NodeProperties.light_properties and node_type == 'light':
+			#complex_property = "light/" + property
+		#else:
+			#complex_property = property
+
+		#global line_count
+		
+		##if the property is a matrix (eg verts and faces) parse it here
+		#if complex_property in NodeProperties.matrix_properties:
+			
+			#matrix = []
+			#if len(datastream[0]) == 1: #this matrix uses the endlist token instead of a number as a delimiter
+				#del datastream[0]
+				#line = datastream[0]
+				#line_count += 1
+				
+				#while line[0] != 'endlist':
+					#matrix.append(line)
+					#del datastream[0]
+					#line = datastream[0]
+					#line_count += 1
+					
+			#else:
+				#rows = int(datastream[0][1]) #how many rows does the matrix have? The value following the property
+				
+				##Since pyton counts from 0, add 1 to the rows delimiter
+				#for row in datastream[1:rows+1]:
+					#matrix.append(row)
+					
+				#del datastream[0:rows] #leave one row for the read_node_data to delete, I'll have to figure out a better way to handle it
+				#line_count += rows
+			#return matrix	
+		
+		#else:
+			##extract values after the first token on the first line of the datastream and returns it as a list
+			#value = datastream[0][1:]
+			#return value
+	@staticmethod
+	def outformat(value):
+		"""
+		Formats a value to valid ascii based on the value alone. Doesn't do any 
+		checks against the properties dictionery,
+		"""
+
+		outstring = ""
+		if type(value) == list:
+			if value: #if its nonempty list
+				if type(value[0]) == list:
+					#this is a matrix value
+					#first add the index value, the number of rows
+					outstring += str(len(value))
+					for row in value:
+						outstring += '\n' + 4*" " + " ".join([str(e) for e in row])
+				else:
+					#this is a vector value
+					outstring += " ".join([str(v) for v in value])
+					
 		else:
-			#extract values after the first token on the first line of the datastream and returns it as a list
-			value = datastream[0][1:]
-			return value
+			#not a vector or matrix element
+			outstring + str(value)
+			
+		return outstring
 		
 	@staticmethod
 	def format(node_type, property, value):
 		"""
-		Returns a string formatted like nwn expects them in a .mdl ascii 
+		Returns a string formatted like nwn expects them to be in a .mdl ascii based on
+		the supplied property and node type.
 		"""
 
 		if not value:
@@ -309,7 +373,6 @@ class NodeProperties:
 		else:
 			complex_property = property
 
-		#print complex_property, value
 		if complex_property in NodeProperties.matrix_properties: #complex_property contains a matrix of values
 			list_str = " " + str(len(value))
 			
@@ -543,7 +606,8 @@ class Node:
 		tmp_str = "node " + self.type + " " + self.name
 		for key in self.properties.keys():
 			if self.properties[key]:
-				tmp_str += "\n  " + key + " " + str(NodeProperties.format(self.type, key, self.properties[key]))
+				tmp_str += "\n  " + key + " " + str(NodeProperties.outformat(self.properties[key]))
+				#tmp_str += "\n  " + key + " " + str(NodeProperties.format(self.type, key, self.properties[key]))
 		tmp_str += "\nendnode"		
 		return tmp_str
 	
@@ -571,10 +635,7 @@ class Node:
 					if first_token == "setfillumcolor":
 						first_token = "selfillumcolor"
 						
-					self.properties[first_token] = NodeProperties.extract(self.type, datastream)
-
-					
-					
+					self.properties[first_token] = NodeProperties.extract(datastream)	
 				else:
 					pass
 					if first_token[0] != '#':
