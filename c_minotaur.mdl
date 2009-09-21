@@ -9,7 +9,6 @@ setanimationscale 1
 beginmodelgeom c_minotaur
 node dummy c_minotaur
   parent NULL
-  #part-number 0
 endnode
 node dummy ROOTDUMMY
   parent c_minotaur

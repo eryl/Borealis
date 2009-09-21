@@ -16,20 +16,25 @@ All property values are stored as strings, list of strings or list of lists of s
 ##
 
 def sort_nodes(node_list):
+	"""
+	Sorts a list of nodes based on their parent. This is really slow, should be rewritten
+	somehow.
+	"""
 	tmp_list = node_list[:]
 	sorted_list = []
 
 	while tmp_list:
 		for node in tmp_list:
-			if node.parent.lower() == 'null':
-				sorted_list.insert(0, node)
-				tmp_list.remove(node)
-			else:
-				for n in sorted_list:
-					if n.name == node.parent:
-						index = sorted_list.index(n)
-						sorted_list.insert(index+1, node)
-						tmp_list.remove(node)
+			if node.parent:
+				if node.parent.lower() == 'null':
+					sorted_list.insert(0, node)
+					tmp_list.remove(node)
+				else:
+					for n in sorted_list:
+						if n.name == node.parent:
+							index = sorted_list.index(n)
+							sorted_list.insert(index+1, node)
+							tmp_list.remove(node)
 	
 	  
 	return sorted_list
@@ -254,7 +259,6 @@ class NodeProperties:
 		Extracts values from the datastream according to the kind of property
 		"""
 		property = datastream[0][0] #extract the first word on the line
-		
 		#this works on the assumption that newlines never start with a numeral value
 		#if the next line in the datastream starts with a number, its a multi-line 
 		#(matrix-based) value
@@ -264,20 +268,24 @@ class NodeProperties:
 			if datastream[1][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): #removes any valid digit-characters ('.', '-' and 'e') from the token and checks if the result is a digit
 				#next line is a number, assume this is a matrix
 				data = []
-				del datastream[0]
+				del datastream[0] #remove the line with the token since it's superflous
+				
 				while(True):
+					
 					data.append(datastream[0])
 					
-					if datastream[0][0]:
-						if not datastream[0][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): 
+					if datastream[1][0]:
+						if not datastream[1][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): 
 						# next line is not a digit, abort
 							break
+
+					#on the last iteration this will not be executed since the caller also wants to delete a line
 					del datastream[0] #remove the line just added to data
 					
 				return data
 		
 		#if we reach this point, the value is not a matrix
-		data = " ".join(datastream[0][1:-1])
+		data = " ".join(datastream[0][1:])
 		return data
 
 		##construct the property name this class is expecting, common properties doesnt have prefixes
@@ -346,7 +354,7 @@ class NodeProperties:
 					
 		else:
 			#not a vector or matrix element
-			outstring + str(value)
+			outstring += str(value)
 			
 		return outstring
 		
@@ -588,20 +596,27 @@ class Node:
 	type = "dummy"
 
 	properties = {}
-
+	children = []
+	parent = []
 			
 	def __init__(self, datastream = None, type = 'dummy', name = 'null'):
 		self.properties = NodeProperties.get_properties(type) #will return a dictionary containing valid values
 		
 		self.type = type
 		self.name = name
-		
+		self.children = []
 		#not parsing a file, return with an empty node
 		if not datastream:
 			return
 		
 		self.read_node_data(datastream)
-	 
+		
+	def make_parent(self, child):
+		"""
+		Adds a child to this Node.
+		"""
+		self.children.append(child)
+		
 	def __str__(self):
 		tmp_str = "node " + self.type + " " + self.name
 		for key in self.properties.keys():
@@ -647,7 +662,6 @@ class Node:
 			
 			line_count += 1
 			line = datastream[0]	
-
 
 
 class AnimNode(Node):	
@@ -750,13 +764,13 @@ class Animation:
 		event_string = ""
 		for time, event in self.events:
 			event_string += "\n  event %s %s" % (str(time), str(event))
-		
 		return ("newanim " + self.name + " " + self.model_name +
 				"\n  length " + str(self.length) +
 				"\n  transtime " + str(self.transtime) +
 				"\n  animroot " + str(self.animroot) +
 				event_string +
 				#"\n%s" % ("\n".join(str(s) for s in self.events)) +
+				#this sort is really slow, try find a method to speed it up
 				"\n%s" % ("\n".join(str(s) for s in sort_nodes(self.nodes))) +
 				"\ndoneanim " + self.name + " " + self.model_name
 				)
