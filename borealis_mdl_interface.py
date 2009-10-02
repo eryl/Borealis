@@ -15,30 +15,31 @@ All property values are stored as strings, list of strings or list of lists of s
 ##property = "1 1 1\n 1 1 1"
 ##
 
+			
 def sort_nodes(node_list):
 	"""
-	Sorts a list of nodes based on their parent. This is really slow, should be rewritten
-	somehow.
+	Sorts the node-list based on parent-child relationships. Parents should always 
+	preceed children.
 	"""
-	tmp_list = node_list[:]
-	sorted_list = []
-
-	while tmp_list:
-		for node in tmp_list:
-			if node.parent:
-				if node.parent.lower() == 'null':
-					sorted_list.insert(0, node)
-					tmp_list.remove(node)
-				else:
-					for n in sorted_list:
-						if n.name == node.parent:
-							index = sorted_list.index(n)
-							sorted_list.insert(index+1, node)
-							tmp_list.remove(node)
+	#create a new list with only names for fast checking
+	name_list = [node.name for node in node_list]
+	for node in node_list:
+		if node.parent in name_list and node.name in node_list:
+			#move the node name in the name_list behind its parent in the same list
+			name_list.remove(node.name)
+			name_list.insert(name_list.index(node.parent), node.name)
+	node_list_sorted = [] #create a new list to be returned
 	
-	  
-	return sorted_list
-			
+	#goes through the name_list in order, add corresponding elements from
+	#the node_list in the same order.
+	for node_name in name_list: 
+		for node in node_list:
+			if node.name == node_name:
+				node_list_sorted.append(node)
+				break;
+	return node_list_sorted
+		
+	
 line_count = 0
 
 class NodeProperties:
@@ -171,6 +172,9 @@ class NodeProperties:
 						   ,'bounce_cokey' : None}
 
 
+	#multiline properties has its value on multiple lines
+	multiline_properties = ['verts', 'tverts', 'faces', 'colors', 'weights', 'constraints',
+							'positionkey', 'orientationkey']
 						   
 	#has multiple values on a line
 	vector_properties = ['position', 'orientation', 'mesh/wirecolor', 'mesh/ambient', 'mesh/diffuse', 'mesh/color',
@@ -262,30 +266,25 @@ class NodeProperties:
 		#this works on the assumption that newlines never start with a numeral value
 		#if the next line in the datastream starts with a number, its a multi-line 
 		#(matrix-based) value
+		#update: the assumption doesn't hold, skin weight list rows starts with words
 		data = None
-		#start by peeking on the first token on the next line in the datastream
-		if datastream[1][0]: #make sure there is a token on the next line
-			if datastream[1][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): #removes any valid digit-characters ('.', '-' and 'e') from the token and checks if the result is a digit
-				#next line is a number, assume this is a matrix
-				data = []
-				del datastream[0] #remove the line with the token since it's superflous
-				
-				while(True):
+		if property in NodeProperties.multiline_properties:
+			# this is a multi-line value
+			data = []
+			if len(datastream[0]) > 1:
+			
+				num_lines = int(datastream[0][1]) #the second token on the line is the line count
+				for line in range(num_lines):
+					del datastream[0]
+					
 					
 					data.append(datastream[0])
-					
-					if datastream[1][0]:
-						if not datastream[1][0].replace('.', '').replace('-', '').replace('e', '').isdigit(): 
-						# next line is not a digit, abort
-							break
-
-					#on the last iteration this will not be executed since the caller also wants to delete a line
-					del datastream[0] #remove the line just added to data
-					
-				return data
-		
+			
+			return data
+					  
 		#if we reach this point, the value is not a matrix
 		data = " ".join(datastream[0][1:])
+		
 		return data
 
 		##construct the property name this class is expecting, common properties doesnt have prefixes
@@ -468,6 +467,18 @@ class Geometry:
 				continue
 			
 			line = datastream[0]
+			
+			
+	def order_nodes(self):	
+		#create child-parent links between all nodes
+		for node in self.geometry_nodes:
+			if node.parent:
+				parent = self.get_node(node.parent)
+				if parent:
+					parent.make_parent(node)
+
+	def sort_nodes(self):
+		pass
 
 	def __str__(self):
 		#sort_nodes(self.geometry_nodes)
@@ -596,9 +607,7 @@ class Node:
 	type = "dummy"
 
 	properties = {}
-	children = []
-	parent = []
-			
+	
 	def __init__(self, datastream = None, type = 'dummy', name = 'null'):
 		self.properties = NodeProperties.get_properties(type) #will return a dictionary containing valid values
 		
@@ -616,6 +625,7 @@ class Node:
 		Adds a child to this Node.
 		"""
 		self.children.append(child)
+
 		
 	def __str__(self):
 		tmp_str = "node " + self.type + " " + self.name
@@ -650,7 +660,8 @@ class Node:
 					if first_token == "setfillumcolor":
 						first_token = "selfillumcolor"
 						
-					self.properties[first_token] = NodeProperties.extract(datastream)	
+					self.properties[first_token] = NodeProperties.extract(datastream)
+					
 				else:
 					pass
 					if first_token[0] != '#':
@@ -771,7 +782,7 @@ class Animation:
 				event_string +
 				#"\n%s" % ("\n".join(str(s) for s in self.events)) +
 				#this sort is really slow, try find a method to speed it up
-				"\n%s" % ("\n".join(str(s) for s in sort_nodes(self.nodes))) +
+				"\n%s" % ("\n".join(str(s) for s in sort_nodes_new(self.nodes))) +
 				"\ndoneanim " + self.name + " " + self.model_name
 				)
 

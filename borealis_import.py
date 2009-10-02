@@ -117,6 +117,7 @@ class AuroraImporter():
 			
 			# parent the objects, perhaps this would be better to put in a seperate for loop
 			parent = None
+			
 			if node.parent.lower() != "null":
 					parent = Blender.Object.Get(node.parent)
 					if parent:
@@ -126,10 +127,11 @@ class AuroraImporter():
 			
 			#Assign the location
 			if node.position:
+				position = [float(p) for p in node.position.split()] #the position is a space delimited string, split it to get the positions as elements in a list
 				p_loc = [0.0,0.0,0.0]
 				if parent:
 					p_loc = parent.getLocation('worldspace')
-				location = [p_loc[i]+float(node.position[i]) for i in range(len(node.position))]
+				location = [p_loc[i]+pos for i, pos in enumerate(position)]
 				ob.setLocation(location[0], location[1], location[2])
 			
 		#go thourgh the list again, this time apply rotation
@@ -397,9 +399,9 @@ class AuroraImporter():
 		
 		#parse the settings that can be applied to a blender material
 		if node.diffuse:
-			mat.rgbCol = [float(f) for f in node.diffuse]
+			mat.rgbCol = [float(s) for s in node.diffuse.split()]
 		if node.specular:
-			mat.specCol = [float(f) for f in node.specular]
+			mat.specCol = [float(s) for s in node.specular.split()]
 		if node.alpha:
 			mat.alpha = float(node.alpha)
 			mat.setMode(mat.getMode()|Blender.Material.Modes['ZTRANSP'])

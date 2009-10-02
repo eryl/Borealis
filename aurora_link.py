@@ -93,12 +93,7 @@ class AuroraLink:
 		
 
 		if type(value) in [list, tuple]: #formats sequences as "element element element "
-			if name in NodeProperties.vector_properties or name in NodeProperties.color_properties:
-				value = "".join([str(val) + " " for val in value])
-			elif name in NodeProperties.matrix_properties:
-				return
-			else:
-				value = "".join(value)
+			value = " ".join(str(v) for v in value)
 				
 		if not ob:
 			ob = AuroraLink.active_object
