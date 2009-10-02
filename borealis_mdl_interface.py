@@ -8,13 +8,6 @@ the class Model as the root element.
 All property values are stored as strings, list of strings or list of lists of strings.
 """
 
-### The different ways of storing the values, as I see them is either as their target
-#datatype or always as string, making it up to the user of the value to format it.
-#keeping vector elements as strings delimited with space or as a list of elements
-#is also something to consider. Matrices will have to be treated as lists of lists, or would become unwieldly
-##property = "1 1 1\n 1 1 1"
-##
-
 def sort_nodes(node_list):
 	"""
 	Sorts a list of nodes based on their parent. This is really slow, should be rewritten
@@ -288,50 +281,6 @@ class NodeProperties:
 		data = " ".join(datastream[0][1:])
 		return data
 
-		##construct the property name this class is expecting, common properties doesnt have prefixes
-		#if property in NodeProperties.common_properties:
-			#complex_property = property
-		#elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
-			#complex_property = "mesh/" + property
-		#elif property in NodeProperties.emitter_properties and node_type == "emitter":
-			#complex_property = "emitter/" + property
-		#elif property in NodeProperties.light_properties and node_type == 'light':
-			#complex_property = "light/" + property
-		#else:
-			#complex_property = property
-
-		#global line_count
-		
-		##if the property is a matrix (eg verts and faces) parse it here
-		#if complex_property in NodeProperties.matrix_properties:
-			
-			#matrix = []
-			#if len(datastream[0]) == 1: #this matrix uses the endlist token instead of a number as a delimiter
-				#del datastream[0]
-				#line = datastream[0]
-				#line_count += 1
-				
-				#while line[0] != 'endlist':
-					#matrix.append(line)
-					#del datastream[0]
-					#line = datastream[0]
-					#line_count += 1
-					
-			#else:
-				#rows = int(datastream[0][1]) #how many rows does the matrix have? The value following the property
-				
-				##Since pyton counts from 0, add 1 to the rows delimiter
-				#for row in datastream[1:rows+1]:
-					#matrix.append(row)
-					
-				#del datastream[0:rows] #leave one row for the read_node_data to delete, I'll have to figure out a better way to handle it
-				#line_count += rows
-			#return matrix	
-		
-		#else:
-			##extract values after the first token on the first line of the datastream and returns it as a list
-			#value = datastream[0][1:]
-			#return value
 	@staticmethod
 	def outformat(value):
 		"""
