@@ -409,31 +409,6 @@ class AuroraExporter():
 			
 		return node
 	
-	def export_emitter(self, ob):
-
-		return node
-	
-	def export_light(self, ob):
-		"""
-		Takes a Blender object as argument and returns a nwn node of type light
-		"""
-		
-		node_type = AuroraLink.get_aurora_value("node_type", ob)
-		node = Node(type = node_type)
-		
-		#handles converting all the properties to their respective nwn model values
-		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
-			print property,value, "in node.properties? ", property in node.properties
-			#The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
-
-			if property not in NodeProperties.blender_handled and property in node.properties:
-				if property in NodeProperties.vector_properties:
-					node.properties[property] = value.split()
-				else:
-					node.properties[property] = value
-			
-		return node
-	
 	def export_aurabase(self, aurabase, export_animations = False):
 		"""
 		Constructs a nwn model based on the aurabase passed and its children
@@ -502,18 +477,7 @@ class AuroraExporter():
 			node = borealis_mdl_interface.Node(type=node_type)
 
 			node = self.export_node(ob)
-			#if node_type in ['trimesh','danglymesh', 'skin', 'aabb']:
-				#node = self.export_mesh(ob)
-
-			#elif node_type == 'emitter':
-				#node = self.export_emitter(ob)
 			
-			#elif node_type == 'light':
-				#node = self.export_light(ob)
-			
-			#else:
-				#print "Not a matching node"
-					
 			##Done with node type-specific parsing, setting up general values
 			
 			if ob.parent:
