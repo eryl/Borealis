@@ -17,6 +17,31 @@ except ImportError:
 	def radians(degrees):
 		return degrees/57.2957795
 
+#These are color values used to determine what 
+material_colors = {
+	1 : [189, 165, 112], #Dirt 
+    2 : [0, 0, 0], #Obscuring 
+    3 : [88, 228, 34], #Grass 
+    4 : [255,223, 147], #Wood 
+    5 : [127, 127, 127], #Stone
+    6 : [100, 200, 255], #Water
+    7 : [139, 20, 127], #No Walk 
+    8 : [255,255,255], #Transparent
+    9 : [255, 0, 255], #Carpet
+    10 : [191, 191, 223], #Metal
+    11 : [0, 255, 255], #Puddles
+    12 : [123, 129, 0], #Swamp
+    13 : [165, 0,0], #Mud
+    14 : [0, 126,12], #Leaves
+    15 : [255,0,0], #Lava
+    16 : [80,174,168], #Bottomless Pit
+    17 : [0,0,255], #Deep Water
+    18 : [255,192,203], #Door
+    19 : [230,230,250], #Snow
+    20 : [255,165,0], #Sand
+    21 : [255,255,0]  #Barebones
+}
+
 class AuroraExporter():
 	models = {}
 	scene = None
@@ -138,8 +163,33 @@ class AuroraExporter():
 						face_tverts.append(index)
 				else:
 					face_tverts = [0,0,0]
-				
-				face_list = face_verts + [1] + face_tverts + [0]
+
+				mat_id = 1
+				if node_type == 'aabb':
+					#determine material id based on vertex colors
+					col_r = col_g = col_b = 0
+					for v_col in face.col:
+						col_r += v_col.r
+						col_g += v_col.g
+						col_b += v_col.b
+						print v_col.r, v_col.g, v_col.b
+						
+					col_r /= len(face.col)
+					col_g /= len(face.col)
+					col_b /= len(face.col)
+
+					print [col_r, col_g, col_b]
+					global material_colors
+					for key, value in material_colors.items():
+						#allow for some tolerance since it's difficult to get the exact color
+						#when doing vertex paint
+						if (value[0] > col_r - 10 and value[0] < col_r + 10) and (value[1] > col_g - 10 and value[1] < col_g + 10) and (value[2] > col_b - 10 and value[2] < col_b + 10):
+							mat_id = key
+							break
+						
+
+						
+				face_list = face_verts + [1] + face_tverts + [mat_id]
 				node.properties['faces'].append(face_list)
 		
 			

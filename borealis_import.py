@@ -42,7 +42,30 @@ except ImportError:
 	def radians(degrees):
 		return degrees/57.2957795
 
-
+#These are color values used to determine what 
+material_colors = {
+	1 : [189, 165, 112], #Dirt 
+    2 : [0, 0, 0], #Obscuring 
+    3 : [88, 228, 34], #Grass 
+    4 : [255,223, 147], #Wood 
+    5 : [127, 127, 127], #Stone
+    6 : [100, 200, 255], #Water
+    7 : [139, 20, 127], #No Walk 
+    8 : [255,255,255], #Transparent
+    9 : [255, 0, 255], #Carpet
+    10 : [191, 191, 223], #Metal
+    11 : [0, 255, 255], #Puddles
+    12 : [123, 129, 0], #Swamp
+    13 : [165, 0,0], #Mud
+    14 : [0, 126,12], #Leaves
+    15 : [255,0,0], #Lava
+    16 : [80,174,168], #Bottomless Pit
+    17 : [0,0,255], #Deep Water
+    18 : [255,192,203], #Door
+    19 : [230,230,250], #Snow
+    20 : [255,165,0], #Sand
+    21 : [255,255,0]  #Barebones
+}
 
 class AuroraImporter():
 	armature = None
@@ -365,27 +388,39 @@ class AuroraImporter():
 		
 		faces = []
 		uvfaces = []
-		material_id = []
+		material_ids = []
+
+		mesh.verts.extend(verts)
 		
 		#the faces lines in .mdl files are in the format:
 		#[v1] [v2] [v3] [smooth_group] [t1] [t2] [t3] [matid]
+		#since blender can't handle more than 16 different material groups,
+		#we'll have to use something else to represent this. For now use vertex colors for walkmeshes only.
+		#smoothing groups is ignored for the moment.
+		
 		if node.faces:
-			for node_face in node.faces:
+			for i,node_face in enumerate(node.faces):
 				faces.append([int(node_face[0]), int(node_face[1]), int(node_face[2])])
-				if int(node_face[7]) not in material_id:
-					#construct a list of all face groups
-					material_id.append(int(node_face[7]))
+
+				if node.type == "aabb":
+					#only add vertex colors for walkmesh nodes for now
+					global material_colors
+					material_ids.append([i, material_colors[int(node_face[7])]])
+					
+					
 				#creates a list with actual uv vertenode_face coordinates
 				if tverts:
 					#does a quick lookup from the tverts list for every tN value
 					uvfaces.append([tverts[int(node_face[4])],tverts[int(node_face[5])],tverts[int(node_face[6])]])
 
-		print node.name, material_id
-	
-						
-		mesh.verts.extend(verts)
 		mesh.faces.extend(faces,ignoreDups=True)
 		
+		if material_ids: #if there are entries in the material_ids, apply them to the faces
+			mesh.vertexColors = True
+			for [face_i, col_list] in material_ids:
+				for v_col in mesh.faces[face_i].col:
+					v_col.r, v_col.g, v_col.b = col_list
+			
 		#adding uv-coordinates to the faces
 		#this probably isn't the best way of doing this, as it's asssuming the faces are in the right order
 		if uvfaces:
