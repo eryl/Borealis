@@ -83,7 +83,10 @@ class NodeProperties:
 						,'constraints' : None
 					
 						#Skin properties
-						,'weights' : []}
+						,'weights' : []
+
+						#aabb properties
+						,'aabb' : []}
 	
 
 	
@@ -263,11 +266,14 @@ class NodeProperties:
 		Extracts values from the datastream according to the kind of property
 		"""
 		property = datastream[0][0] #extract the first word on the line
-		#this works on the assumption that newlines never start with a numeral value
-		#if the next line in the datastream starts with a number, its a multi-line 
-		#(matrix-based) value
-		#update: the assumption doesn't hold, skin weight list rows starts with words
+		
 		data = None
+
+		if property == "aabb":
+			#aabb are formatted differently in the mdl-file, treat it differently
+			
+			return #for now, just let it slide
+		
 		if property in NodeProperties.multiline_properties:
 			# this is a multi-line value
 			data = []
@@ -282,55 +288,12 @@ class NodeProperties:
 			
 			return data
 					  
-		#if we reach this point, the value is not a matrix
+		#if we reach this point, the value is not multi-line
 		data = " ".join(datastream[0][1:])
 		
 		return data
 
-		##construct the property name this class is expecting, common properties doesnt have prefixes
-		#if property in NodeProperties.common_properties:
-			#complex_property = property
-		#elif property in NodeProperties.mesh_properties and (node_type in ['trimesh', "skin", "danglymesh", "aabb"]):
-			#complex_property = "mesh/" + property
-		#elif property in NodeProperties.emitter_properties and node_type == "emitter":
-			#complex_property = "emitter/" + property
-		#elif property in NodeProperties.light_properties and node_type == 'light':
-			#complex_property = "light/" + property
-		#else:
-			#complex_property = property
-
-		#global line_count
 		
-		##if the property is a matrix (eg verts and faces) parse it here
-		#if complex_property in NodeProperties.matrix_properties:
-			
-			#matrix = []
-			#if len(datastream[0]) == 1: #this matrix uses the endlist token instead of a number as a delimiter
-				#del datastream[0]
-				#line = datastream[0]
-				#line_count += 1
-				
-				#while line[0] != 'endlist':
-					#matrix.append(line)
-					#del datastream[0]
-					#line = datastream[0]
-					#line_count += 1
-					
-			#else:
-				#rows = int(datastream[0][1]) #how many rows does the matrix have? The value following the property
-				
-				##Since pyton counts from 0, add 1 to the rows delimiter
-				#for row in datastream[1:rows+1]:
-					#matrix.append(row)
-					
-				#del datastream[0:rows] #leave one row for the read_node_data to delete, I'll have to figure out a better way to handle it
-				#line_count += rows
-			#return matrix	
-		
-		#else:
-			##extract values after the first token on the first line of the datastream and returns it as a list
-			#value = datastream[0][1:]
-			#return value
 	@staticmethod
 	def outformat(value):
 		"""
@@ -476,9 +439,6 @@ class Geometry:
 				parent = self.get_node(node.parent)
 				if parent:
 					parent.make_parent(node)
-
-	def sort_nodes(self):
-		pass
 
 	def __str__(self):
 		#sort_nodes(self.geometry_nodes)
@@ -782,7 +742,7 @@ class Animation:
 				event_string +
 				#"\n%s" % ("\n".join(str(s) for s in self.events)) +
 				#this sort is really slow, try find a method to speed it up
-				"\n%s" % ("\n".join(str(s) for s in sort_nodes_new(self.nodes))) +
+				"\n%s" % ("\n".join(str(s) for s in sort_nodes(self.nodes))) +
 				"\ndoneanim " + self.name + " " + self.model_name
 				)
 

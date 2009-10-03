@@ -63,7 +63,6 @@ class AuroraExporter():
 		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
 			property = property.split('/')[-1] #assign the last element to property
 
-			print property,value, "in node.properties? ", property in node.properties
 			##The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
 			if property in node.properties:
 				if len(value.split()) > 1: #if the value is a space delimited list, it's assigned as a list of strings
@@ -76,6 +75,21 @@ class AuroraExporter():
 			node.properties['faces'] = []
 			node.properties['tverts'] = []
 			mesh_data = ob.getData(mesh = True)
+
+			#first check for non-triangular faces
+			mesh_data.sel = False
+			non_tri_faces = []
+			for face in mesh_data.faces:
+				if len(face.verts) != 3:
+					non_tri_faces.append(face)
+					face.sel = 1
+			#Here we should do a popup asking user what to do if there are non-triangular faces
+			if non_tri_faces:
+				answer = Blender.Draw.PupMenu("Mesh " + ob.name + " has non triangular faces.%t|Abort export%x1|Convert to triangles%x2")
+				if answer == 1:
+					raise RuntimeError, "Export aborted"
+				else:
+					mesh_data.quadToTriangle()
 			
 			#create verts
 			for MVert in mesh_data.verts[:]:
@@ -108,7 +122,8 @@ class AuroraExporter():
 			#assign the list to the nodes.tverts, 2D so last element is always 0	
 			for tverts in uv_list:
 				node.properties['tverts'].append([tverts[0], tverts[1], 0.0])
-						
+
+			
 			#creates faces
 			for face in mesh_data.faces:
 				face_verts = [v.index for v in face]
@@ -234,180 +249,190 @@ class AuroraExporter():
 					new_list.append(llist)
 				
 				node.properties['weights'] = new_list
+
+			if node_type == "aabb":
+
+				#From Waylands original script
+		
+				facelist =  mesh_data.faces
+				aabb_data = []
+				
+				if len(mesh_data.faces)%2 == 1:
+					print("Odd number of faces in AABB tree.  Expect problems.")
+				
+				self.build_aabb_tree_node(ob, facelist, 0, aabb_data)
+				
+				node.properties['aabb'] = aabb_data
+				print aabb_data
+				
 			
 		return node
 
-	def export_mesh(self, ob):
+	def build_aabb_tree_node(self, ob, facelist, level, aabb_data):
 		"""
-		Takes a Blender mesh object as argument and returns a nwn node of type MeshNode
+		Builds aabb nodes. This is a direct conversion from nwmax, since I
+		don't clearly know whats being done yet.
 		"""
-		
-		node_type = AuroraLink.get_aurora_value("node_type", ob)
-		node = Node(type=node_type)
-		node.properties['verts'] = []
-		node.properties['faces'] = []
-		node.properties['tverts'] = []
-		mesh_data = ob.getData(mesh = True)
-		
-		#create verts
-		for MVert in mesh_data.verts[:]:
-			vertex = [a for a in MVert.co]
-			node.properties['verts'].append(vertex)
-		
-		#create tverts, UV vertex is per face in blender (since we don't use sticky vertices)
-		#seems like we're loosing tverts somewhere, probably here.
-		uv_list = []
-		if mesh_data.faceUV:
-			image = None
-			for face in mesh_data.faces:
-				#all faces should have the same image in nwn
-				if face.image != image:
-					image = face.image
-				for uv_vert in face.uv:
-					if not uv_vert in uv_list:
-						uv_list.append(uv_vert)
-			
-			print "image %s for mesh %s" % (image, mesh_data.name)
-			if image:
-				image_filename = image.getFilename()
-				
-				#strip path and extension from filename
-				bitmap = Blender.sys.basename(image_filename)
-				bitmap = Blender.sys.splitext(bitmap)[0]
-				print "bitmap", bitmap
-				node.properties['bitmap'] = bitmap
-			
-		#assign the list to the nodes.tverts, 2D so last element is always 0	
-		for tverts in uv_list:
-			node.properties['tverts'].append([tverts[0], tverts[1], 0.0])
-					
-		#creates faces
-		for face in mesh_data.faces:
-			face_verts = [v.index for v in face]
-						
-			#create indices from uv_list, since uv_vertices doesn't have any
-			#only do this for faces that actually have uv set otherwise
-			#assign values 0,0,0 to tverts index
-			face_tverts = []
-			if mesh_data.faceUV:
-				for tvert in face.uv:
-					index = uv_list.index(tvert)
-					face_tverts.append(index)
-			else:
-				face_tverts = [0,0,0]
-			
-			face_list = face_verts + [1] + face_tverts + [0]
-			node.properties['faces'].append(face_list)
+
+		max_recursion = 100
 	
-		
-		#this isn't the best way of doing this, in case the mesh has multiple materials
-		material = mesh_data.materials[0]
-		node.properties['diffuse'] = material.rgbCol
-		node.properties['specular'] = material.specCol
-		
-		#Will probably add extra controls to edit ambient color, for now we use the mirror color
-		node.properties['alpha'] = material.alpha
-		
-		#handles converting all the properties to their respective nwn model values
-		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
-			print property, value
-			#property_name = property 
-			##The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
-			#if property not in NodeProperties.blender_handled and property in node.properties:
-				#if property in NodeProperties.vector_properties:
-					#node.properties[property] = value.split()
-				#else:
-					#node.properties[property] = value
-		
-		if node_type == 'danglymesh':
-			weight_verts = mesh_data.getVertsFromGroup('dangly_constraints', 1)
-			constraints_list = []
+		if not facelist:
+			return
 			
-		 
-			
-			for (v,w) in weight_verts:
-				weight = (1.0 - w) * 255.0
-				##blenders int doesnt round up correctl
-				if weight % 1 > 0.5:
-					constraints_list.append([int(weight)+1])
-				else:
-					constraints_list.append([int(weight)])
-					
-			node.properties['constraints'] = constraints_list
+		if level > max_recursion:
 		
-		if node_type == 'skin':
-			###For now skin isn't handled at all
-			pass
-			###the sum of all weights is always exactly 1 for nwn skinmeshes
-			
-			##this is a stub, the idea is to check against the armature
-			##object what vertgrups corresponds to a bone in the model
-			##first get the armature from the armature modifier
-			#armature = None
-			#for mod in ob.modifiers:
-				#if mod.type == Modifier.Types.ARMATURE:
-					#armature = mod[Modifier.Settings.OBJECT]
-			
-			#gets all the vertgroups
-			bones_list = mesh_data.getVertGroupNames()
-			#now sort through the bones_list, remove the elements that arn't
-			#part of the model.
-			if ob.name in bones_list:
-				bones_list.remove(ob.name) #the weights shouldn't include the own node
-			model_nodes = [bnode.name for bnode in AuroraLink.get_all_children(self.current_base)]
-			for bone in bones_list:
-				if bone not in model_nodes:
-					bones_list.remove(bone)
+			print("AABB Generation: Maximum recursion level reached.  Check for duplicate verticies and/or faces.")
+			return
+		
+		#-- Calculate the size of the bounding box for the face list
+		
+		bot_left = Blender.Mathutils.Vector([100.0, 100.0, 100.0])
+		top_right = Blender.Mathutils.Vector([-100.0, -100.0, -100.0])
+		midpoint_average = Blender.Mathutils.Vector([100.0, 100.0, 100.0])
+		
+		for face in facelist:
+			for vert in face.verts:
+				#define the minimum axis aligned bounding box for the faces in facelist
+				x,y,z = vert.co
+				if x < bot_left.x:
+					bot_left.x = x
+				if y < bot_left.y:
+					bot_left.y = y
+				if z < bot_left.z:
+					bot_left.z = z
 
-			#first create a list with as many elements as vertices in the mesh, every element
-			#an empty dictionary
-			weight_list = [{} for v in mesh_data.verts]
+
+				if x > top_right.x:
+					top_right.x = x
+				if y > top_right.y:
+					top_right.y = y
+				if z > top_right.z:
+					top_right.z = z
+
+		#Calc the mid-point average for the facelist
+		midpoints_sum = Mathutils.Vector([0,0,0])
+		for face in facelist:
+			midpoints_sum += face.cent
+		midpoint_average = Blender.Mathutils.Vector([co/len(facelist) for co in midpoints_sum])
+
+		#-- calc the box position in 3d space. This basically the centre of the
+		#-- axis aligned bounding box (aabb)
+		box_pos = Blender.Mathutils.Vector([co/2 for co in (bot_left+top_right)])
+
+		#-- postion the aabb in 3d space relative the node
+		box_pos.z = bot_left.z
+		#in coordsys parent ( box_pos += node.pos)
+		#box_pos += ob.getLocation()
+
+		#Create the string for the current box
+		#the format nwn expects is 
+		#aabb bottom_left.x bottom_left.x bottom_left.y top_right.z top_right.y top_right.z faceindex
+		#if the box bounds a single face, its a leaf and the index corresponds to the face it bounds
+		#if it bound more than one, faceindex is set to -1 to indicate its a parent box
+		aabbLine = ""
+		if level: #if we're not at level 0: add indent
+			aabbLine += "       "
+		aabbLine += level*"    " + "%f %f %f %f %f %f" % (bot_left.x, bot_left.y, bot_left.z, top_right.x, top_right.y, top_right.z)
+		
+		if len(facelist) == 1:
+			#facelist is a single face, this is a leaf in the tree, recursion stops here
+			aabbLine += " %i\n" % facelist[0].index
+
+			#update aabb data array
+			aabb_data.append(aabbLine)
 			
-			for group in bones_list:
-				#getVertsFromGroup returns a list of touples: [(index, weight), ..] for every
-				#vert in the group
-				group_list = mesh_data.getVertsFromGroup(group, 1)
-				for (index, weight) in group_list:
-					#add the current group and its corresponding weight to the vert with the
-					#correct index
-					weight_list[index][group] = weight
-								
-			#normalize the list, the sum of the boneweights in every vert should be 1
-			for index,vert in enumerate(weight_list):
+		else:	#-- box is a parent as bounds multiple faces
+
+			#-1 indicates that this is a bounding box with children
+			aabbLine += " -1\n"
+			
+			aabb_data.append(aabbLine)
+			
+			bb_size = top_right - bot_left
+			#-- Axis 1=x 2=y 3=z
+			#-- Identify the longest axis for the bounding box
+			axis = 1
+			if (bb_size.y > bb_size.x): axis = 2
+			if (bb_size.z > bb_size.y): axis = 3
+
+			#-- Check exception case, where all points are coplanar with the axis-aligned split plane
+			change_axis = True
+			for face in facelist:
+				p1 = face.cent
+				if axis == 1:
+					change_axis = change_axis and (p1.x == midpoint_average.x)
+				elif axis == 2:
+					change_axis = change_axis and (p1.y == midpoint_average.y)
+				elif axis == 3:
+					change_axis = change_axis and (p1.z == midpoint_average.z)
+			
+			if change_axis:
+				axis += 1
+				if axis > 3:
+					axis = 1
+			
+			leftside = True
+			good_split = False
+			leftlist = []
+			rightlist = []
+			
+			#-- work out the split for the tree: left and right branches
+			axiscnt = 1
+			while (not good_split):
+				leftlist = []
+				rightlist = []
 				
-				total_weight = 0
-				for key,value in vert.items():
-					if value == 0: #weights with a value of zero shouldnt be exported
-						vert.pop(key)
-					total_weight += float(value)
-					
-				#print "index[%i]:" % index, total_weight
-				#if there isn't a weight assigned for this vert, one has to be assigned.
-				#for now we select the vert and raise an error
-				if not len(vert): 
-					mesh_data.sel = False
-					mesh_data.verts[index].sel = 1
-					self.scene.objects.active = ob
-					Blender.Window.EditMode(1)	
-					raise ValueError, "Vertex weight not assigned, vertex has been selected"
+				#-- split out the faces in facelist to the left and right tree
+				#-- branches. The split is based on split axis value
+				for face in facelist:
+					p1 = face.cent
+
+					if axis == 1:
+						leftside = (p1.x < midpoint_average.x)
+					elif axis == 2:
+						leftside = (p1.y < midpoint_average.y)
+					elif axis == 3:
+						leftside = (p1.z < midpoint_average.z)
+
+					if leftside:
+						leftlist.append(face)
+					else:
+						rightlist.append(face)
 				
-				#calculate normalization ratio and normalize the values
-				norm = 1.0 / total_weight
-				for key, value in vert.items():
-					vert[key] = value * norm
+				
+				#-- This code tries to make a split that is not down one branch only.
+				#-- This is probably causing more problems than it is worth.
+				if leftlist and rightlist:
+				#if there are faces in both lists; consider it a good split
+					good_split = True
+
+				else:
+					#try another axis
+					axiscnt += 1
+					axis += 1
+					if axis > 3: axis = 1
+
+					if (axiscnt > 3):
+						raise RuntimeError, "Unable to get a good aabb split, even after trying all axis"
+						
+						aabb_data.append("#ERROR: aabb split problem.")
+						
+						for f in facelist:
+							aabb_data.append("#  face: "+ str(f))
+							
+						
+						aabb_data.append("#ERROR-END")
+						
+						return
+				
+
+			#-- Recursive calls
+			self.build_aabb_tree_node(ob, leftlist, level+1, aabb_data)
+			self.build_aabb_tree_node(ob, rightlist, level+1, aabb_data)
 			
-			#rebuilds the weight_list as a list of list instead of list of dicts
-			#could need some cleaning up
-			new_list = []
-			for vert in weight_list:
-				llist = []
-				for key, value in vert.items():
-					llist.extend([key,value])
-				new_list.append(llist)
-			
-			node.properties['weights'] = new_list
-			
-		return node
+
+
+	
 	
 	def export_aurabase(self, aurabase, export_animations = False):
 		"""

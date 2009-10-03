@@ -143,10 +143,12 @@ class AuroraImporter():
 				continue
 			
 			if node.orientation:
+				
+				
 				#Rotation in .mdl file is in axis/angle format: [x, y, y, angle]
 				#We use a blenders quaternion to do the conversions
-				axis = [float(a) for a in node.orientation[:3]]
-				angle = float(node.orientation[3])
+				axis = [float(a) for a in node.orientation.split()[:3]]
+				angle = float(node.orientation.split()[3])
 				quaternion = Mathutils.Quaternion(axis, angle)
 				euler = quaternion.toEuler()
 				euler = [a for a in quaternion.toEuler()]
@@ -164,9 +166,7 @@ class AuroraImporter():
 		Takes a nwn node-object as argument and creates a blender lamp based on the data
 		"""
 		lamp = Blender.Lamp.New('Lamp', node.name)
-		lamp.R = float(node.color[0])
-		lamp.G = float(node.color[1])
-		lamp.B = float(node.color[2])
+		lamp.R, lamp.G, lamp.B = [float(c) for c in node.color.split()]
 		lamp.dist = float(node.radius)
 		
 		ob = Object.New('Lamp', node.name)
@@ -365,21 +365,22 @@ class AuroraImporter():
 		
 		faces = []
 		uvfaces = []
-		face_groups = []
+		material_id = []
+		
 		#the faces lines in .mdl files are in the format:
 		#[v1] [v2] [v3] [smooth_group] [t1] [t2] [t3] [matid]
 		if node.faces:
 			for node_face in node.faces:
 				faces.append([int(node_face[0]), int(node_face[1]), int(node_face[2])])
-				if int(node_face[7]) not in face_groups:
+				if int(node_face[7]) not in material_id:
 					#construct a list of all face groups
-					face_groups.append(int(node_face[7]))
+					material_id.append(int(node_face[7]))
 				#creates a list with actual uv vertenode_face coordinates
 				if tverts:
 					#does a quick lookup from the tverts list for every tN value
 					uvfaces.append([tverts[int(node_face[4])],tverts[int(node_face[5])],tverts[int(node_face[6])]])
 
-		print node.name, face_groups
+		print node.name, material_id
 	
 						
 		mesh.verts.extend(verts)
