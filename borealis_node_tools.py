@@ -62,7 +62,7 @@ common_mesh_toggles.add(AuToggle("Beaming", "mesh/beaming"))
 common_mesh_toggles.add(AuToggle("Rotate Texture", "mesh/rotatetexture"))
 common_mesh_toggles.add(AuToggle("Inherit Color", "mesh/inheritcolor"))
 common_mesh_buttons.add(common_mesh_toggles)
-common_mesh_buttons.add(AuMenuNamed("Tilefade", "mesh/tilefade", menuitems = {"Not a cap" : 0, "Fadable" : 1, "Neighbour" : 2 , "Base" : 3}, default_item = "Not a cap"))
+common_mesh_buttons.add(AuMenuNamed("Tilefade", "mesh/tilefade", menuitems = {"Not a cap" : "0", "Fadable" : "1", "Neighbour" : "2" , "Base" : "3"}, default_item = "Not a cap"))
 common_mesh_buttons.add(AuColorPickerNamed("Ambient color:", "mesh/ambient", size = (140,40), picker_rect = (40,40)))
 common_mesh_buttons.add(AuColorPickerNamed("Self Illum. color:", "mesh/selfillumcolor", size = (140,40), picker_rect = (40,40)))
 ### End Common mesh buttons ###
@@ -73,11 +73,12 @@ trimesh_buttons.add(TextLabel("Trimesh Tools"))
 trimesh_buttons.add(common_mesh_buttons)
 ### End Trimesh buttons ###
 
-#### Trimesh Buttons ####
+#### Walkmesh Buttons ####
 walkmesh_buttons = Panel("Walkmesh Buttons", 1, 2, padding = (0,5))
 walkmesh_buttons.add(TextLabel("Walkmesh Tools"))
+walkmesh_buttons.add(Button("Paint Walkmesh Material"))
 walkmesh_buttons.add(common_mesh_buttons)
-### End Trimesh buttons ###
+### End Walkmesh buttons ###
 
 ### Dangly Mesh Tools ###
 danglymesh_panel = Panel("Dangly Mesh Buttons", 1, 2, padding = (0,5))
@@ -87,6 +88,7 @@ danglymesh_settings = Panel("Dangly Mesh Buttons", 1, 1)
 danglymesh_settings.add(AuFloat("Period", "mesh/period"))
 danglymesh_settings.add(AuFloat("Displacement", "mesh/displacement"))
 danglymesh_settings.add(AuFloat("Tightness", "mesh/tightness"))
+danglymesh_settings.add(Button("Paint Constraints"))
 danglymesh_panel.add(danglymesh_settings)
 ### End Dangly Mesh Buttons ###
 
@@ -170,10 +172,6 @@ emitter_particles_panel.add(AuToggle("bounce_co",'emitter/bounce_co'))
 emitter_particles_panel.add(AuToggle("loop",'emitter/loop'))
 emitter_particles_panel.add(AuToggle("splat",'splat'))
 emitter_particles_panel.add(AuToggle("affectedbywind",'affectedbywind'))
-
-
-
-
 
 #texture settings
 emitter_texture_panel = TogglePanel("Emitter Texture Values", 2, 1, toggle = 0)

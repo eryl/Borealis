@@ -515,6 +515,39 @@ class AuroraImporter():
 		
 		return ob
 
+	def build_skin_armature(self):
+		"""
+		Builds armature for the skin-nodes in the scene
+		"""
+		scene = Blender.Scene.GetCurrent()
+		for ob in scene.objects:
+			node_type = AuroraLink.get_aurora_value("node_type", ob)
+			if node_type == "skin":
+				#this is a skin node; create an armature for it
+				armature_ob = Blender.Object.New("Armature", "arm_" + ob.name)
+				scene.objects.link(armature_ob)
+				armature_ob.setLocation(ob.getLocation()) #place the armature on the same place as the skin node
+				armature_data = armature.getData()
+				armature_data.makeEditable() #make the armature editable
+				
+				mesh_data = ob.getData(mesh=1)
+				#vertex groups are constructed for every bone node in the mdl-file
+				nodes_names = [node.name for node in AuroraLink.get_all_children(self.aurabase)]
+				vert_groups = mesh_data.getVertGroupNames()
+				for vert_group in vert_groups:
+					if vert_group in node_names:
+						node = Blender.Objects.Get(vert_group)
+						#add a bone to the armature in the same position as the corresponding node.
+						edit_bone = Blender.Armature.Editbone()
+						edit_bone.name = vert_group
+						edit_bone.head = Vector(node.getLocation())
+						edit_bone.tail = Vector(node.getLocation())*1.1
+						
+						#add a constraint to the bone to follow it's node.
+						
+					
+				
+		
 			
 	def import_animations(self):
 		#every animations data is expressed in a dict with the following format

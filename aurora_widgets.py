@@ -41,7 +41,6 @@ class AuWidget(Widget):
 			self.value = self.default_value
 
 	def handle_event(self):
-		
 		AuroraLink.set_aurora_value(self.aurora_property, self.value)
 
 class AuButton(AuWidget, Button):
@@ -132,7 +131,9 @@ class AuMenu(AuWidget, Menu):
 
 	def update(self):
 		value = AuroraLink.get_aurora_value(self.aurora_property)
+		print value, type(value)
 		if value:
+			print self.menuvalues
 			index = self.menuvalues.index(value)
 			self.value = self.menukeys[index]
 			self.current_item = index

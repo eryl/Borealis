@@ -1,0 +1,4 @@
+Implement the paint dangly constraints tool
+Implement the paint walkmesh material tool
+Solve skin-node handling, using bones
+Add support for importing animations from another model

@@ -17,7 +17,8 @@ except ImportError:
 	def radians(degrees):
 		return degrees/57.2957795
 
-#These are color values used to determine what 
+#These are color values used to determine what the material ID for face should be
+#by using their vertex colors. Not ideal, but blender only support 16 different material groups per mesh, nwn needs 21
 material_colors = {
 	1 : [189, 165, 112], #Dirt 
     2 : [0, 0, 0], #Obscuring 
@@ -82,8 +83,10 @@ class AuroraExporter():
 		"""
 		Takes a blender mesh object and returns a nwn Node set to the correct type
 		"""
+		
 		node_type = AuroraLink.get_aurora_value("node_type", ob)
 		node = borealis_mdl_interface.Node(type = node_type)
+		
 		#handles converting all the properties to their respective nwn model values
 		for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
 			property = property.split('/')[-1] #assign the last element to property
@@ -128,7 +131,7 @@ class AuroraExporter():
 				image = None
 				for face in mesh_data.faces:
 					#all faces should have the same image in nwn
-					if face.image != image:
+					if face.image != image and face.image:
 						image = face.image
 					for uv_vert in face.uv:
 						if not uv_vert in uv_list:
@@ -172,8 +175,8 @@ class AuroraExporter():
 						col_r += v_col.r
 						col_g += v_col.g
 						col_b += v_col.b
-						print v_col.r, v_col.g, v_col.b
-						
+
+					#calculate the median color for this face	
 					col_r /= len(face.col)
 					col_g /= len(face.col)
 					col_b /= len(face.col)
@@ -189,62 +192,45 @@ class AuroraExporter():
 						
 
 						
-				face_list = face_verts + [1] + face_tverts + [mat_id]
+				face_list = face_verts + [1] + face_tverts + [mat_id] #create the face-string
 				node.properties['faces'].append(face_list)
 		
 			
 			#this isn't the best way of doing this, in case the mesh has multiple materials
-			material = mesh_data.materials[0]
-			node.properties['diffuse'] = material.rgbCol
-			node.properties['specular'] = material.specCol
-			
-			#Will probably add extra controls to edit ambient color, for now we use the mirror color
-			node.properties['alpha'] = material.alpha
-			
-			#handles converting all the properties to their respective nwn model values
-			for property, value in AuroraLink.get_aurora_properties(ob).iteritems():
-				print property, value
-				#property_name = property 
-				##The value should only be assigned here if it isnt handled by native blender data and is in the nodes properties dictionary
-				#if property not in NodeProperties.blender_handled and property in node.properties:
-					#if property in NodeProperties.vector_properties:
-						#node.properties[property] = value.split()
-					#else:
-						#node.properties[property] = value
-			
+			if mesh_data.materials:
+				material = mesh_data.materials[0]
+				node.properties['diffuse'] = material.rgbCol
+				node.properties['specular'] = material.specCol
+				node.properties['alpha'] = material.alpha
+				
+
 			if node_type == 'danglymesh':
-				weight_verts = mesh_data.getVertsFromGroup('dangly_constraints', 1)
-				constraints_list = []
-				
-			 
-				
-				for (v,w) in weight_verts:
-					weight = (1.0 - w) * 255.0
-					##blenders int doesnt round up correctl
-					if weight % 1 > 0.5:
-						constraints_list.append([int(weight)+1])
-					else:
-						constraints_list.append([int(weight)])
+				if 'dangly_constraints' in mesh_data.getVertGroupNames():
+					weight_verts = mesh_data.getVertsFromGroup('dangly_constraints', 1)
+					constraints_list = []
+							 
+					for (v,w) in weight_verts:
+						weight = (1.0 - w) * 255.0
+						##blenders int doesnt round up correctl
+						if weight % 1 > 0.5:
+							constraints_list.append([int(weight)+1])
+						else:
+							constraints_list.append([int(weight)])
+							
+					node.properties['constraints'] = constraints_list
+				else:
+					answer = Draw.PupMenu("No dangly_constraints group in vertex groups. No constraints built. Expect problems.%t|Abort Export%x1|Continue with export%x2")
+					if answer == 1:
+						raise RuntimeError, "Export aborted due to undefined constraints vertex layer"
 						
-				node.properties['constraints'] = constraints_list
-			
 			if node_type == 'skin':
-				###For now skin isn't handled at all
-				pass
-				###the sum of all weights is always exactly 1 for nwn skinmeshes
-				
-				##this is a stub, the idea is to check against the armature
-				##object what vertgrups corresponds to a bone in the model
-				##first get the armature from the armature modifier
-				#armature = None
-				#for mod in ob.modifiers:
-					#if mod.type == Modifier.Types.ARMATURE:
-						#armature = mod[Modifier.Settings.OBJECT]
+				#this creates the weights list based on vertex groups named after
+				#the nodes that acts as bones
 				
 				#gets all the vertgroups
 				bones_list = mesh_data.getVertGroupNames()
-				#now sort through the bones_list, remove the elements that arn't
-				#part of the model.
+				#now sort through the bones_list, remove the elements which doesn't
+				#correspond to nodes in the model
 				if ob.name in bones_list:
 					bones_list.remove(ob.name) #the weights shouldn't include the own node
 				model_nodes = [bnode.name for bnode in AuroraLink.get_all_children(self.current_base)]
@@ -282,7 +268,7 @@ class AuroraExporter():
 						mesh_data.verts[index].sel = 1
 						self.scene.objects.active = ob
 						Blender.Window.EditMode(1)	
-						raise ValueError, "Vertex weight not assigned, vertex has been selected"
+						raise RuntimeError, "Vertex weight not assigned, vertex has been selected"
 					
 					#calculate normalization ratio and normalize the values
 					norm = 1.0 / total_weight
@@ -301,9 +287,7 @@ class AuroraExporter():
 				node.properties['weights'] = new_list
 
 			if node_type == "aabb":
-
-				#From Waylands original script
-		
+				#this is converted from NwMax
 				facelist =  mesh_data.faces
 				aabb_data = []
 				
