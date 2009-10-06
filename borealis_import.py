@@ -19,10 +19,9 @@ This is an import script for Bioware Neverwinter Nights ASCII models.
    Esc or Q: quit.<br>
 
  Supported:<br>
-   Importing of most geometry nodes works well. Animations arn't implemented fully yet.
+   Importing of most geometry nodes works well.
 
  Known issues:<br>
-   Animations arn't supported yet
 """
 
 import Blender
@@ -182,7 +181,7 @@ class AuroraImporter():
 				
 			ob.setLocation(ob.getLocation()) # Without this, it doesn't seem to update its children
 			ob.makeDisplayList()
- 
+		self.build_skin_armature()
 			
 	def import_light(self, node):
 		"""
@@ -527,12 +526,12 @@ class AuroraImporter():
 				armature_ob = Blender.Object.New("Armature", "arm_" + ob.name)
 				scene.objects.link(armature_ob)
 				armature_ob.setLocation(ob.getLocation()) #place the armature on the same place as the skin node
-				armature_data = armature.getData()
+				armature_data = armature_ob.getData()
 				armature_data.makeEditable() #make the armature editable
 				
 				mesh_data = ob.getData(mesh=1)
 				#vertex groups are constructed for every bone node in the mdl-file
-				nodes_names = [node.name for node in AuroraLink.get_all_children(self.aurabase)]
+				node_names = [node.name for node in AuroraLink.get_all_children(self.aurabase)]
 				vert_groups = mesh_data.getVertGroupNames()
 				for vert_group in vert_groups:
 					if vert_group in node_names:
@@ -544,7 +543,7 @@ class AuroraImporter():
 						edit_bone.tail = Vector(node.getLocation())*1.1
 						
 						#add a constraint to the bone to follow it's node.
-						
+						#constraints are added through poses
 					
 				
 		
