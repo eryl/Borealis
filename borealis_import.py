@@ -533,21 +533,37 @@ class AuroraImporter():
 				#vertex groups are constructed for every bone node in the mdl-file
 				node_names = [node.name for node in AuroraLink.get_all_children(self.aurabase)]
 				vert_groups = mesh_data.getVertGroupNames()
+				ebones = []
 				for vert_group in vert_groups:
 					if vert_group in node_names:
 						node = Blender.Objects.Get(vert_group)
 						#add a bone to the armature in the same position as the corresponding node.
 						edit_bone = Blender.Armature.Editbone()
+						armature_data.bones[node.name] = edit_bone
+						
 						edit_bone.name = vert_group
 						edit_bone.head = Vector(node.getLocation())
 						edit_bone.tail = Vector(node.getLocation())*1.1
 						
-						#add a constraint to the bone to follow it's node.
-						#constraints are added through poses
-					
+				#done with adding bones
+				armature_data.update()
+				pose = armature_ob.getPose()
 				
+				for pose_bone in pose.bones.values():
+					#add constraints to the bone to follow it's node.
+					#constraints are added through poses
+					
+					constraint_loc = pose_bone.constraints.append(Blender.Constraint.Type.COPYLOC)
+					constraint_loc[Constraint.Settings.TARGET] = Blender.Objects.Get(pose_bone.name)
+					constraint_rot = pose_bone.constraints.append(Blender.Constraint.Type.COPYROT)
+					constraint_rot[Constraint.Settings.TARGET] = Blender.Objects.Get(pose_bone.name)
+					
+				arm_mod = ob.modifiers.append(Blender.Modifier.Types.ARMATURE)
+				arm_mod[Modifiers.Settings.OBJECT] = armature_object
 		
-			
+				mesh_data.makeDisplayList()
+				
+				
 	def import_animations(self):
 		#every animations data is expressed in a dict with the following format
 		#animation_name : {nodes : { node_name : ipo_name }, 'transtime' : transtime, animroot : animroot, events : event_list}
