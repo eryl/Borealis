@@ -1,4 +1,4 @@
-bl_addon_info = {
+bl_info = {
     'name': 'Neverwinter Mdl importer',
     'author': 'Erik Ylipää',
     'version': '0.1',
@@ -6,13 +6,11 @@ bl_addon_info = {
     'location': 'File > Import-Export > Nwn mdl ',
     'description': 'Import Neverwinter Nights mdl files',
     'warning': '', # used for warning icon and text in addons panel
-    'wiki_url': 'http://wiki.blender.org/index.php/Extensions:2.5/Py/' \
-        'Scripts/File_I-O/Raw_Mesh_IO',
-    'tracker_url': 'https://projects.blender.org/tracker/index.php?'\
-        'func=detail&aid=21733&group_id=153&atid=469',
-    "tracker_url": ""  ,
-    "support": 'OFFICIAL',
+    'wiki_url': '',
+    'tracker_url': '',
+    'support': 'OFFICIAL',
     'category': 'Import-Export'}
+
 
 # To support reload properly, try to access a package var, if it's there, reload everything
 if "bpy" in locals():
@@ -24,17 +22,20 @@ if "bpy" in locals():
 
 import bpy
 
-from borealis_import import BorealisImport
-from borealis_export import BorealisExport
-from borealis_tools import BorealisTools
+#from . import borealis_lowlevel_mdl
+#from . import borealis_import
+#from . import borealis_export
+#from . import borealis_tools
 
 def register():
-    bpy.types.register_module(__name__)
+    from . import borealis_tools
+    bpy.utils.register_class(borealis_tools.BorealisTools)
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
-    bpy.types.register_module(__name__)
+    from . import borealis_tools
+    bpy.utils.unregister_class(borealis_tools.BorealisTools)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
  

@@ -7,6 +7,7 @@ Created on 11 aug 2010
 import bpy
 from bpy.props import *
 
+from . import borealis_lowlevel_mdl
 from borealis_lowlevel_mdl import *
 from mathutils import Quaternion
 
