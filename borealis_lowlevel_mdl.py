@@ -3,8 +3,6 @@ Created on 10 aug 2010
 
 @author: erik
 '''
-
-
 class Model(object):
     '''
     classdocs
@@ -126,48 +124,6 @@ class Property:
     def __str__(self):
         return self.name
     
-    
-    
-class ListProperty(Property):
-    def __init__(self, name, datatype=float, has_blender_eq=False):
-        self.value= []
-        Property.__init__(self, name, datatype, has_blender_eq)
-        
-    def read_value(self, current_line, model_data):
-        if len(current_line) < 2:
-            pass
-        else:
-            lines = int(current_line[-1])
-            while lines:
-                line = model_data.pop(0)
-                if not line: #skip empty lines
-                    continue
-                self.value.append([value for value in line])
-                
-                lines -= 1
-        
-        self.value_written = True
-        
-    def __str__(self):
-        out_string = " "*2+"%s %i\n" % (self.name, len(self.value))
-        for line in self.value:
-            out_string += " "*4+ " ".join([str(value) for value in line]) + "\n"
-        return out_string
-
-class ValueProperty(Property):
-    def __init__(self, name, datatype=float, has_blender_eq=False):
-        self.value = []
-        Property.__init__(self, name, datatype, has_blender_eq)
-
-    def read_value(self, current_line, model_data):
-        self.value = [value for value in current_line[1:]]
-        self.value_written = True
-        
-    def __str__(self):
-        out_string =" "*2+ "%s %s\n" % (self.name, " ".join([str(value) for value in self.value]))
-        
-        return out_string
-
 ### Geometry classes ### 
 
 class Geometry:
@@ -225,13 +181,20 @@ class Geometry:
     
     
 class Node:
-    properties = []
-    
     
     def __init__(self, name):
-        self.name = name
-        self.prop_dict = dict(zip([property.name for property in self.properties], self.properties))
         
+        self.name = name
+        
+        from . import borealis_mdl_definitions
+        
+        props = borealis_mdl_definitions.get_node_properties(self.type)
+        self.properties = {}
+        
+        import copy
+        
+        for prop in props:
+            self.properties[prop.name] = copy.copy(prop)
         
     def from_file(self, model_data):
         while model_data:
@@ -246,15 +209,18 @@ class Node:
             if current_line[0] == "setfillumcolor":
                 current_line[0] = "selfillumcolor"
             
-            if current_line[0] in self.prop_dict:
-                self.prop_dict[current_line[0]].read_value(current_line, model_data)
+            if current_line[0] in self.properties:
+                self.properties[current_line[0]].read_value(current_line, model_data)
     
     def get_prop_value(self, property):
-        return self.prop_dict[property].value
+        if property not in self.properties:
+            return None
+        print("get_prop_value: %s, value: %s" % (property, self.properties[property].value))
+        return self.properties[property].value
     
     def __str__(self):
         out_string = "node %s %s\n" % (self.type, self.name)
-        for property in self.properties:
+        for property in self.properties.values():
             if property.value_written:
                 out_string += str(property)
         out_string += "endnode\n"
@@ -262,104 +228,22 @@ class Node:
             
 class NodeDummy(Node):
     type = "dummy"
-    def __init__(self,name):
-        self.properties = [ValueProperty("parent",has_blender_eq=True),
-                           ValueProperty("position",has_blender_eq=True),
-                           ValueProperty("orientation",has_blender_eq=True),
-                           ]
-        Node.__init__(self,name)
-    
 
 class NodeTrimesh(Node):
     type = "trimesh"
-    def __init__(self,name):
-        self.properties = set([ValueProperty("parent",has_blender_eq=True),
-                     ValueProperty("ambient"),
-                     ValueProperty("diffuse"),
-                     ValueProperty("specular"),
-                     ValueProperty("shininess"),
-                     ValueProperty("shadow"),
-                     ValueProperty("bitmap"),
-                     ListProperty("verts",has_blender_eq=True),
-                     ListProperty("tverts",has_blender_eq=True),
-                     ListProperty("faces",has_blender_eq=True),
-                     ValueProperty("position",has_blender_eq=True),
-                     ValueProperty("orientation",has_blender_eq=True),
-                     ValueProperty("alpha"),
-                     ValueProperty("scale"),
-                     ValueProperty("selfillumcolor"),
-                     ])
-        Node.__init__(self,name)
-
 
 class NodeDanglymesh(Node):
     type = "danglymesh"
-    
-    def __init__(self, name):
-        self.properties = [ValueProperty("parent",has_blender_eq=True),
-                      ValueProperty("ambient"),
-                      ValueProperty("diffuse"),
-                      ValueProperty("specular"),
-                      ValueProperty("shininess"),
-                      ValueProperty("shadow"),
-                      ValueProperty("bitmap"),
-                      ListProperty("verts",has_blender_eq=True),
-                      ListProperty("tverts",has_blender_eq=True),
-                      ListProperty("faces",has_blender_eq=True),
-                      ValueProperty("displacement"),
-                      ValueProperty("period"),
-                      ValueProperty("tightness"),
-                      ListProperty("constraints"),
-                      ValueProperty("position",has_blender_eq=True),
-                      ValueProperty("orientation",has_blender_eq=True),
-                      ValueProperty("alpha"),
-                      ValueProperty("scale"),
-                      ValueProperty("selfillumcolor"),
-                      ]
-        Node.__init__(self,name)
-
-    
-    
 
 class NodeSkin(Node):
     type = "skin"
-    def __init__(self,name):
-        self.properties = [ValueProperty("parent",has_blender_eq=True),
-                      ValueProperty("ambient"),
-                      ValueProperty("diffuse"),
-                      ValueProperty("specular"),
-                      ValueProperty("shininess"),
-                      ValueProperty("shadow"),
-                      ValueProperty("bitmap"),
-                      ListProperty("verts",has_blender_eq=True),
-                      ListProperty("tverts",has_blender_eq=True),
-                      ListProperty("faces",has_blender_eq=True),
-                      ListProperty("weights"),
-                      ValueProperty("position",has_blender_eq=True),
-                      ValueProperty("orientation",has_blender_eq=True),
-                      ValueProperty("alpha"),
-                      ValueProperty("scale"),
-                      ValueProperty("selfillumcolor"),
-                      ]
-        Node.__init__(self,name)
 
 class NodeEmitter(Node):
     type = "emitter"
-    def __init__(self,name):
-        self.properties = [ValueProperty("parent",has_blender_eq=True),
-                           ValueProperty("position",has_blender_eq=True),
-                           ValueProperty("orientation",has_blender_eq=True),
-                           ]
-        Node.__init__(self,name)
 
 class NodeLight(Node):
     type = "light"
-    def __init__(self,name):
-        self.properties = [ValueProperty("parent",has_blender_eq=True),
-                           ValueProperty("position",has_blender_eq=True),
-                           ValueProperty("orientation",has_blender_eq=True),
-                           ]
-        Node.__init__(self,name)
+
 
 ### Done Geometry classes ###
 
@@ -408,7 +292,7 @@ class AnimationNodeDummy(Node):
         
 if __name__ == "__main__":
     mdl = Model()
-    mdl.from_file("c_allip.mdl.txt")
+    mdl.from_file("c_allip.mdl")
     #mdl = Model("c_drggreen.mdl.txt")
     
     print(mdl)

@@ -23,18 +23,22 @@ if "bpy" in locals():
 import bpy
 
 #from . import borealis_lowlevel_mdl
-#from . import borealis_import
+
 #from . import borealis_export
 #from . import borealis_tools
 
 def register():
     from . import borealis_tools
+    from . import borealis_import
     bpy.utils.register_class(borealis_tools.BorealisTools)
+    bpy.utils.register_class(borealis_import.BorealisImport)
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
     from . import borealis_tools
+    from . import borealis_import
+    bpy.utils.unregister_class(borealis_import.BorealisImport)
     bpy.utils.unregister_class(borealis_tools.BorealisTools)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)

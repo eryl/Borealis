@@ -11,19 +11,23 @@ class BorealisSettings(bpy.types.PropertyGroup):
     """
     node_type = bpy.props.EnumProperty(items = [("dummy","dummy","dummy"),
                                         ("trimesh","trimesh","trimesh"),
+                                        ("danglymesh","danglymesh","danglymesh"),
+                                        ("skin","skin","skin"),
+                                        ("emitter","emitter","emitter"),
+                                        ("aabb","aabb","aabb"),
                                         ("light","light","light")],
                                        name = "Node Type",
                                        description = "The NWN Node type of this object")
-
-    diffuse = bpy.props.FloatVectorProperty(name="Diffuse colour", subtype='COLOR')
-    #### basic settings ####
+    is_aurabase = bpy.props.BoolProperty(name = "Is Aurabase Object", 
+                                   description="Toggles this as a aurabase object. There should only be one for every nwn model", 
+                                   default=False)
     
     @classmethod
     def register(cls):
         
         #We create a dynamic class to use for node properties 
         classname = "BorealisNodeProps"
-        attribute_dict = {"bl_idname": classname, "bl_label" : "BorealisNodeProps", }
+        attribute_dict = {"bl_idname": classname, "bl_label" : "BorealisNodeProps", "properties" : []}
         
         from . import borealis_mdl_definitions
         #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
@@ -33,23 +37,34 @@ class BorealisSettings(bpy.types.PropertyGroup):
                 continue
             
             if isinstance(prop, borealis_mdl_definitions.StringProperty):
-                attribute_dict[str(prop)] = bpy.props.StringProperty(name = prop.name)
+                attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
+                attribute_dict["properties"].append(prop)
             elif isinstance(prop, borealis_mdl_definitions.VectorProperty):
                 pass
             elif isinstance(prop, borealis_mdl_definitions.BooleanProperty):
-                attribute_dict[str(prop)] = bpy.props.BoolProperty(name = prop.name)
+                attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
+                attribute_dict["properties"].append(prop)
             elif isinstance(prop, borealis_mdl_definitions.EnumProperty):
                 pass
             elif isinstance(prop, borealis_mdl_definitions.ColorProperty):
-                attribute_dict[str(prop)] = bpy.props.FloatVectorProperty(name = prop.name, subtype='COLOR')
-            elif isinstance(prop, borealis_mdl_definitions.ValueProperty):
-                attribute_dict[str(prop)] = bpy.props.IntProperty(name = prop.name)
+                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, subtype='COLOR')
+                attribute_dict["properties"].append(prop)
+            elif isinstance(prop, borealis_mdl_definitions.IntProperty):
+                attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
+                attribute_dict["properties"].append(prop)
+            elif isinstance(prop, borealis_mdl_definitions.FloatProperty):
+                attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
+                attribute_dict["properties"].append(prop)
+
             
         #we now create a dynamic class and register it so it will be usable by this class
         node_props_class = type(classname, (bpy.types.PropertyGroup,), attribute_dict)
         bpy.utils.register_class(node_props_class)
         
         cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
+        
+        bpy.utils.register_class(BorealisBasicProperties)
+        cls.basic_settings = bpy.props.PointerProperty(type=BorealisBasicProperties)
         
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
@@ -61,18 +76,6 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
     supermodel = bpy.props.StringProperty(name = "Supermodel")
     animationscale = bpy.props.FloatProperty(name = "Animation Scale")
     
-    
-class BorealisNodeProperties(bpy.types.PropertyGroup):
-    pass
-        
-                
-
-            
-            
-
-class BorealisMeshProperties(bpy.types.PropertyGroup):
-    pass
-
 
 class OBJECT_PT_borealis_basic(bpy.types.Panel):
     bl_idname = "OBJECT_PT_borealis_basic"
@@ -82,7 +85,21 @@ class OBJECT_PT_borealis_basic(bpy.types.Panel):
     bl_context = "object"
     
     def draw(self,context):
-        pass
+        layout = self.layout
+        obj = context.object
+        
+        row = layout.row()
+        row.prop(obj.nwn_props, "is_aurabase")
+        
+        if obj.nwn_props.is_aurabase:
+            row = layout.row()
+            row.prop(obj.nwn_props.basic_settings, "classification")
+            row = layout.row()
+            row.prop(obj.nwn_props.basic_settings, "supermodel")
+            row = layout.row()
+            row.prop(obj.nwn_props.basic_settings, "animationscale")
+    
+   
     
 class OBJECT_PT_borealis_animations(bpy.types.Panel):
     bl_idname = "OBJECT_PT_borealis_animations"
@@ -91,18 +108,42 @@ class OBJECT_PT_borealis_animations(bpy.types.Panel):
     bl_label = "NWN Animation Controls"
     bl_context = "object"
     
+    @classmethod
+    def poll(cls, context):
+        return (context.object is not None)
+    
     def draw(self,context):
-        pass
+        layout = self.layout
+        obj = context.object
+        
+        
 
 class OBJECT_PT_node_tools(bpy.types.Panel):
-    bl_idname = "OBJECT_PT_nwn_tools"
+    bl_idname = "OBJECT_PT_node_tools"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_label = "NWN Node tools"
     bl_context = "object"
     
+    @classmethod
+    def poll(cls, context):
+        return (context.object is not None)
+    
     def draw(self,context):
-        pass
+        layout = self.layout
+        obj = context.object
+        node_type = obj.nwn_props.node_type
+        
+        from . import borealis_mdl_definitions
+        
+        #Compare all possible settings for the specific node_type with the ones 
+        #loaded into blender
+        for prop in borealis_mdl_definitions.get_node_properties(node_type):
+            if prop in bpy.types.BorealisNodeProps.properties:
+                row = layout.row()
+                row.prop(obj.nwn_props.node_properties, prop.name)
+            
+            
     
 class BorealisTools(bpy.types.Panel):
     bl_idname = "OBJECT_PT_nwn_tools"
@@ -130,22 +171,13 @@ class BorealisTools(bpy.types.Panel):
         row = layout.row()
         row.prop(obj.nwn_props, "node_type")
 
-        row = layout.row()
-        
-        
-        box = layout.box()
-        box.label("Selection Tools")
-        box.operator("object.select_all")
-        row = box.row()
-        row.operator("object.select_inverse")
-        row.operator("object.select_random")
     
     @classmethod
     def register(cls):
         bpy.utils.register_class(BorealisSettings)
-        bpy.utils.register_class(BorealisNodeProperties)
+        bpy.utils.register_class(OBJECT_PT_borealis_basic)
+        bpy.utils.register_class(OBJECT_PT_node_tools)
         bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisSettings)
-        bpy.types.Object.nwn_nodes = bpy.props.PointerProperty(type=BorealisNodeProperties)
         
 
 
