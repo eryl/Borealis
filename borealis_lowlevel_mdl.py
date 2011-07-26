@@ -182,8 +182,10 @@ class Node:
     def __init__(self, name):
         
         self.name = name
-        
-        import borealis_mdl_definitions
+        try:
+            from . import borealis_mdl_definitions
+        except ValueError:
+            import borealis_mdl_definitions
         props = borealis_mdl_definitions.GeometryNodeProperties.get_properties(self.type)
         self.properties = {}
         
@@ -303,7 +305,10 @@ class AnimationNode(Node):
         
         self.name = name
         
-        import borealis_mdl_definitions
+        try:
+            from . import borealis_mdl_definitions
+        except ValueError:
+            import borealis_mdl_definitions
         props = borealis_mdl_definitions.AnimationNodeProperties.get_properties(self.type)
         self.properties = {}
         
