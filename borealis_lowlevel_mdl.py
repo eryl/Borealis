@@ -3,6 +3,8 @@ Created on 10 aug 2010
 
 @author: erik
 '''
+TAB_WIDTH = 2
+
 class Model(object):
     '''
     classdocs
@@ -102,9 +104,9 @@ class Model(object):
         
         out_string += str(self.geometry)
         
-        out_string += "".join([str(animation) for animation in self.animations])
+        out_string += "\n".join([str(animation) for animation in self.animations])
         
-        out_string += "donemodel %s\n" % self.name
+        out_string += "\ndonemodel %s\n" % self.name
     
         return out_string
 
@@ -186,7 +188,7 @@ class Node:
             from . import borealis_mdl_definitions
         except ValueError:
             import borealis_mdl_definitions
-        props = borealis_mdl_definitions.GeometryNodeProperties.get_properties(self.type)
+        props = borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         import copy
@@ -253,7 +255,9 @@ class Animation:
     def __init__(self, name, mdl_name):
         self.name = name
         self.mdl_name = mdl_name
-        
+        self.length = 0
+        self.transtime = 0
+        self.animroot = ""
         self.nodes = []
 
     def from_file(self, model_data):
@@ -267,7 +271,16 @@ class Animation:
                 current_line = model_data.pop(0)
                 continue
             
-            if current_line[0] == "node":
+            if current_line[0] == "length":
+                self.length = float(current_line[1])
+            
+            elif current_line[0] == "transtime":
+                self.transtime = float(current_line[1])
+                
+            elif current_line[0] == "animroot":
+                self.animroot = current_line[1]
+            
+            elif current_line[0] == "node":
                 node_type = current_line[1]
                 node_name = current_line[2]
                 node = None
@@ -292,13 +305,17 @@ class Animation:
                 node.from_file(model_data)
                 self.nodes.append(node)
                 
+    def output_animation(self):
+        yield "newanim %s %s" % (self.name, self.mdl_name)
+        yield " "*TAB_WIDTH + "length %s" % str(self.length)
+        yield " "*TAB_WIDTH + "transtime %s" % str(self.transtime)
+        yield " "*TAB_WIDTH + "animroot %s" % self.animroot
+        for node in self.nodes:
+            yield str(node)
+        yield "doneanim %s %s" % (self.name, self.mdl_name)
 
     def __str__(self):
-        out_string = "newanim %s %s\n" % (self.name, self.mdl_name)
-        for node in self.nodes:
-            out_string += str(node)
-        out_string += "doneanim %s %s\n" % (self.name, self.mdl_name)
-        return out_string
+        return "\n".join([line for line in self.output_animation()])
 
 class AnimationNode(Node):
     def __init__(self, name):
@@ -309,7 +326,7 @@ class AnimationNode(Node):
             from . import borealis_mdl_definitions
         except ValueError:
             import borealis_mdl_definitions
-        props = borealis_mdl_definitions.AnimationNodeProperties.get_properties(self.type)
+        props = borealis_mdl_definitions.AnimationNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         import copy

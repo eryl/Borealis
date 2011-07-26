@@ -33,7 +33,11 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
     IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
     DEFAULT_IMG_SIZE = 128
 
+    objects = []
+    context = None
+    
     def execute(self, context):
+        self.context = context
         paths = [os.path.join(self.directory, name.name) for name in self.files]
         if not paths:
             paths.append(self.filepath)
@@ -88,10 +92,7 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
             uv_face.uv2 = texture_verts[nwn_uv_face[1]]
             uv_face.uv3 = texture_verts[nwn_uv_face[2]]
 
-    def load_mdl(self,filename):
-        mdl_object = borealis_lowlevel_mdl.Model()
-        mdl_object.from_file(filename)
-        
+    def import_geometry(self, mdl_object, filename):
         #create meshes from all nodes
         for node in mdl_object.geometry.nodes:
             ob = None
@@ -168,7 +169,8 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
 
                             
             bpy.context.scene.objects.link(ob)
-                
+            self.objects.append(ob)
+            
             ### set up properties for the object ###
             ## We're making the assumption that the custom properties from BorealisTools are
             #already registered for all objects
@@ -185,5 +187,98 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
                     continue
                 print("Adding property %s with value %s" % (prop.name, str(prop.value)))
                 ob.nwn_props.node_properties[prop.name] = prop.value
+
+    def import_animations(self, mdl_object):
+        self.current_frame = 1
+        bpy.ops.anim.change_frame(frame=self.current_frame)
+        
+        self.import_animation(mdl_object.animations[0])
+        
+        #end by moving 10 frames ahead, like the max-script does
+        self.current_frame += 10
+            
+        self.import_animation(mdl_object.animations[1])    
+#        for animation in mdl_object.animations[:2]:
+#            self.import_animation(animation)
+
+    def import_animation(self, animation):
+        fps = self.context.scene.render.fps
+        
+        start_frame = self.current_frame + 1
+        length = animation.length * fps
+        
+        end_frame = start_frame + length
+          
+        #we start by setting the static pose before and after the animation
+        bpy.ops.anim.change_frame(frame=start_frame - 1 )
+        for ob in self.objects:
+            if ob.name == "torso_g":
+                print("setting static pose at frame %i" % self.context.scene.frame_current)
+                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
+            ob.keyframe_insert(data_path='location', frame=self.current_frame, group="Location")
+            ob.keyframe_insert(data_path='rotation_axis_angle', frame=self.current_frame, group="Rotation")
+        
+        bpy.ops.anim.change_frame(frame=end_frame + 1)
+        for ob in self.objects:
+            if ob.name == "torso_g":
+                print("setting static pose at frame %i" % self.context.scene.frame_current)
+                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
+            ob.keyframe_insert(data_path='location', frame=end_frame+1, group="Location")
+            ob.keyframe_insert(data_path='rotation_axis_angle', frame=end_frame+1, group="Rotation")
+        
+        bpy.ops.anim.change_frame(frame=end_frame + 9)
+        for ob in self.objects:
+            if ob.name == "torso_g":
+                print("setting static pose at frame %i" % self.context.scene.frame_current)
+                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
+            ob.keyframe_insert(data_path='location', group="Location")
+            ob.keyframe_insert(data_path='rotation_axis_angle', group="Rotation")
+            
+        bpy.ops.anim.change_frame(frame=start_frame)
+        #go back to the start frame and set the marker
+        m = self.context.scene.timeline_markers.new(animation.name + "_start")
+        m.frame = start_frame
+        
+        #set the end marker
+        m = self.context.scene.timeline_markers.new(animation.name + "_end")
+        m.frame = end_frame
+        
+        for node in animation.nodes:
+            ob = bpy.data.objects[node.name]
+            if not ob:
+                continue
+            
+            for property in node.properties.values():
+                if not property.value_written:
+                    continue
+                if property.name == "positionkey":
+                    for time, x, y, z in property.value:
+                        key_frame = time*fps + start_frame
+#                        print("adding position key to frame %i" % key_frame)
+                        bpy.ops.anim.change_frame(frame=key_frame)
+                        
+                        ob.location = x,y,z
+                        ob.keyframe_insert(data_path='location', frame=key_frame, group="Location")
+                        
+                elif property.name == "orientationkey":
+                    for time, x, y, z, angle in property.value:
+                        key_frame = time * fps + start_frame
+#                        print("adding orientation key to frame %i" % key_frame)
+                        bpy.ops.anim.change_frame(frame = key_frame)
+                        
+                        ob.rotation_axis_angle = [angle,x,y,z]
+                        ob.keyframe_insert(data_path='rotation_axis_angle', frame=key_frame, group="Rotation")
+        
+        self.current_frame = end_frame
+        bpy.ops.anim.change_frame(frame=1)
+        
+    def load_mdl(self,filename, ):
+        mdl_object = borealis_lowlevel_mdl.Model()
+        mdl_object.from_file(filename)
+        
+        self.import_geometry(mdl_object, filename)
+        self.import_animations(mdl_object)
+        
+        
 
                 
