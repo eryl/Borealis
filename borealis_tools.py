@@ -31,7 +31,7 @@ class BorealisSettings(bpy.types.PropertyGroup):
         
         from . import borealis_mdl_definitions
         #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
-        for prop in borealis_mdl_definitions.NodeProperties.props_list:
+        for prop in borealis_mdl_definitions.GeometryNodeProperties.get_properties():
             # one case for each of the different property types
             if  prop.has_blender_eq:
                 continue
@@ -138,7 +138,7 @@ class OBJECT_PT_node_tools(bpy.types.Panel):
         
         #Compare all possible settings for the specific node_type with the ones 
         #loaded into blender
-        for prop in borealis_mdl_definitions.get_node_properties(node_type):
+        for prop in borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(node_type):
             if prop in bpy.types.BorealisNodeProps.properties:
                 row = layout.row()
                 row.prop(obj.nwn_props.node_properties, prop.name)

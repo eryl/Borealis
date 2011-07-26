@@ -7,8 +7,6 @@ class Model(object):
     '''
     classdocs
     '''
-
-
     def __init__(self):
         '''
         Constructor
@@ -181,14 +179,12 @@ class Geometry:
     
     
 class Node:
-    
     def __init__(self, name):
         
         self.name = name
         
-        from . import borealis_mdl_definitions
-        
-        props = borealis_mdl_definitions.get_node_properties(self.type)
+        import borealis_mdl_definitions
+        props = borealis_mdl_definitions.GeometryNodeProperties.get_properties(self.type)
         self.properties = {}
         
         import copy
@@ -218,13 +214,15 @@ class Node:
         print("get_prop_value: %s, value: %s" % (property, self.properties[property].value))
         return self.properties[property].value
     
-    def __str__(self):
-        out_string = "node %s %s\n" % (self.type, self.name)
+    def output_node(self):
+        yield "node %s %s" % (self.type, self.name)
         for property in self.properties.values():
             if property.value_written:
-                out_string += str(property)
-        out_string += "endnode\n"
-        return out_string
+                yield str(property)
+        yield "endnode"
+        
+    def __str__(self):
+        return "\n".join([line for line in self.output_node()])
             
 class NodeDummy(Node):
     type = "dummy"
@@ -268,11 +266,30 @@ class Animation:
                 continue
             
             if current_line[0] == "node":
+                node_type = current_line[1]
                 node_name = current_line[2]
-                node = AnimationNodeDummy(node_name)
-                node.from_file(model_data)
+                node = None
+                
+                if node_type == "dummy":
+                    node = AnimationNodeDummy(node_name)
                     
+                elif node_type == "trimesh":
+                    node = AnimationNodeTrimesh(node_name)
+                    
+                elif node_type == "danglymesh":
+                    node = AnimationNodeDanglymesh(node_name)
+                    
+                elif node_type == "skin":
+                    node = AnimationNodeSkin(node_name)
+                    
+                elif node_type == "light":
+                    node = AnimationNodeLight(node_name)
+                elif node_type == "emitter":
+                    node = AnimationNodeEmitter(node_name)
+                
+                node.from_file(model_data)
                 self.nodes.append(node)
+                
 
     def __str__(self):
         out_string = "newanim %s %s\n" % (self.name, self.mdl_name)
@@ -281,15 +298,38 @@ class Animation:
         out_string += "doneanim %s %s\n" % (self.name, self.mdl_name)
         return out_string
 
-class AnimationNodeDummy(Node):
-    type = "dummy"
+class AnimationNode(Node):
     def __init__(self, name):
-        self.properties = [ValueProperty("parent"),
-                      ListProperty("positionkey"),
-                      ListProperty("orientationkey"),
-                      ]
-        Node.__init__(self,name)
         
+        self.name = name
+        
+        import borealis_mdl_definitions
+        props = borealis_mdl_definitions.AnimationNodeProperties.get_properties(self.type)
+        self.properties = {}
+        
+        import copy
+        
+        for prop in props:
+            self.properties[prop.name] = copy.copy(prop)
+   
+class AnimationNodeDummy(AnimationNode):
+    type = "dummy"
+
+class AnimationNodeTrimesh(AnimationNode):
+    type = "trimesh"
+    
+class AnimationNodeDanglymesh(AnimationNode):
+    type = "danglymesh"
+
+class AnimationNodeSkin(AnimationNode):
+    type = "skin"
+
+class AnimationNodeEmitter(AnimationNode):
+    type = "emitter"
+
+class AnimationNodeLight(AnimationNode):
+    type = "light"
+    
 if __name__ == "__main__":
     mdl = Model()
     mdl.from_file("c_allip.mdl")
