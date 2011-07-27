@@ -67,53 +67,47 @@ class BorealisSettings(bpy.types.PropertyGroup):
         
 class Animation(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
-    start_frame = bpy.props.IntProperty(name = "Start Frame")
-    end_frame = bpy.props.IntProperty(name = "End Frame")
     start_marker_name = bpy.props.StringProperty(name = "Start Marker")
-    end_marker_name = bpy.props.StringProperty(name = "Start Marker")
+    end_marker_name = bpy.props.StringProperty(name = "End Marker")
+    
+    ### Since the animations are tightly coupled to the markers
+    ### dynamic properties are used for it's attributes
+    
+    def get_start_frame(self):
+        return self.get_start_marker().frame
+    
+    def set_start_frame(self, value):
+        self.get_start_marker().frame = value
+    
     def get_start_marker(self):
         return bpy.context.scene.timeline_markers[self.start_marker_name]
         
     def set_start_marker(self, value):
         self.start_marker_name = value.name
     
-    start_marker = property(get_start_marker, set_start_marker)
+    def get_end_frame(self):
+        return self.get_end_marker().frame
     
+    def set_end_frame(self, value):
+        self.get_end_marker().frame = value
+    
+    def get_end_marker(self):
+        return bpy.context.scene.timeline_markers[self.end_marker_name]
+        
+    def set_end_marker(self, value):
+        self.end_marker_name = value.name
+    
+    end_marker = property(get_end_marker, set_end_marker)
+    start_marker = property(get_start_marker, set_start_marker)
+    end_frame = property(get_end_frame, set_end_frame)
+    start_frame = property(get_start_frame, set_start_frame)
     
     
 class AnimationProperties(bpy.types.PropertyGroup):
     current_animation = bpy.props.IntProperty(name = "current animation")
     animations = bpy.props.CollectionProperty(type=Animation)
     
-class OBJECT_OT_add_animation(bpy.types.Operator):
-    bl_idname = "object.add_nwn_animation"
-    bl_label = "Add animation"
- 
-    name = bpy.props.StringProperty(name = "Name")
-    start_frame = bpy.props.IntProperty(name = "Start Frame")
-    end_frame = bpy.props.IntProperty(name = "End Frame")
- 
-   
-    @classmethod
-    def poll(cls, context):
-        obj = context.object
-        if not obj:
-            return False
-        return True
- 
-    def execute(self, context):
-        obj = context.object
-        if not obj.nwn_props:
-            return {'CANCELLED'}
-        
-        #find the aurora base object
-        
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-       
+     
 
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
@@ -173,6 +167,18 @@ class BorealisTools(bpy.types.Panel):
         box = layout.box()
         
         box.label(text="Animation settings")
+        box.operator("scene.add_nwn_anim", text = "Add new animation", icon = 'ZOOMIN')
+        for animation in context.scene.nwn_props.animation_props.animations:
+            anim_box = box.box()
+            anim_row = anim_box.row()
+            anim_row.prop(animation, "name")
+            anim_row.operator(operator="scene.remove_nwn_anim", text="", icon="X", emboss=False)
+            
+            anim_row = anim_box.row()
+            start_marker = animation.get_start_marker()
+            end_marker = animation.get_end_marker()
+            anim_row.prop(start_marker, "frame", text="start_frame")
+            anim_row.prop(end_marker, "frame", text="end_frame")
         
         row = layout.row()
         row.prop(obj.nwn_props, "is_nwn_object", text="Toggle NWN object")
@@ -214,7 +220,8 @@ class BorealisTools(bpy.types.Panel):
         bpy.utils.register_class(BorealisBasicProperties)
         bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=BorealisBasicProperties)
         
-        bpy.utils.register_class(OBJECT_OT_add_animation)
+        bpy.utils.register_class(SCENE_OT_add_nwn_animation)
+        bpy.utils.register_class(SCENE_OT_remove_nwn_animation)
         
         #we set different node type enum lists, to make sure only node types relevant to the 
         #selected blender object are allowed
@@ -230,3 +237,37 @@ class BorealisTools(bpy.types.Panel):
                                        name = "Node Type",
                                        description = "The NWN Node type of this object")
 
+
+class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
+    bl_idname ="scene.remove_nwn_anim"
+    bl_label = "Remove NWN animation"
+    
+    def execute(self, context):
+        print("remove animation")
+        return {'FINISHED'}
+    
+class SCENE_OT_add_nwn_animation(bpy.types.Operator):
+    bl_idname ="scene.add_nwn_anim"
+    bl_label = "Add a new NWN animation"
+    
+    name = bpy.props.StringProperty("Animation name")
+    
+    def execute(self, context):
+        print("add animation")
+        scene = context.scene
+        #find the last marker to get a good place to insert the new animation
+        anim_ob = scene.nwn_props.animation_props.animations.add()
+        anim_ob.name = self.name
+        
+        marker = scene.timeline_markers.new(self.name + "_start")
+        anim_ob.start_marker = marker
+        
+        marker = scene.timeline_markers.new(self.name + "_end")
+        anim_ob.end_marker = marker
+        
+        return {'FINISHED'}
+
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)

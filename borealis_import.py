@@ -214,11 +214,6 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         
         end_frame = start_frame + length
         
-        anim_ob = bpy.context.scene.nwn_props.animation_props.animations.add()
-        anim_ob.name = animation.name
-        anim_ob.start_frame = start_frame
-        anim_ob.end_frame = end_frame
-        
         #we start by setting the static pose before and after the animation
         bpy.ops.anim.change_frame(frame=start_frame - 1 )
         for ob in self.objects:
@@ -242,6 +237,10 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         
             
         bpy.ops.anim.change_frame(frame=start_frame)
+        
+        
+        anim_ob = bpy.context.scene.nwn_props.animation_props.animations.add()
+        anim_ob.name = animation.name
         #go back to the start frame and set the marker
         m = self.context.scene.timeline_markers.new(animation.name + "_start")
         m.frame = start_frame
