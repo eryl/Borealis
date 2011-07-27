@@ -174,18 +174,16 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
             ### set up properties for the object ###
             ## We're making the assumption that the custom properties from BorealisTools are
             #already registered for all objects
-            ob.nwn_props.node_type = node.type
+            if ob.type == 'EMPTY':
+                ob.nwn_props.nwn_node_type = node.type
+            else:
+                ob.data.nwn_node_type = node.type
+            ob.nwn_props.is_nwn_object = True
             
-            if node.name == mdl_object.name:
-                ob.nwn_props.is_aurabase = True
-                ob.nwn_props.basic_settings.classification = mdl_object.classification
-                ob.nwn_props.basic_settings.supermodel = mdl_object.supermodel
-                ob.nwn_props.basic_settings.animationscale = float(mdl_object.setanimationscale)
             
             for prop in node.properties.values():
                 if prop.has_blender_eq or not prop.value_written:
                     continue
-                print("Adding property %s with value %s" % (prop.name, str(prop.value)))
                 ob.nwn_props.node_properties[prop.name] = prop.value
 
     def import_animations(self, mdl_object):
@@ -215,7 +213,12 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         length = animation.length * fps
         
         end_frame = start_frame + length
-          
+        
+        anim_ob = bpy.context.scene.nwn_props.animation_props.animations.add()
+        anim_ob.name = animation.name
+        anim_ob.start_frame = start_frame
+        anim_ob.end_frame = end_frame
+        
         #we start by setting the static pose before and after the animation
         bpy.ops.anim.change_frame(frame=start_frame - 1 )
         for ob in self.objects:
@@ -242,10 +245,12 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         #go back to the start frame and set the marker
         m = self.context.scene.timeline_markers.new(animation.name + "_start")
         m.frame = start_frame
+        anim_ob.start_marker = m
         
         #set the end marker
         m = self.context.scene.timeline_markers.new(animation.name + "_end")
         m.frame = end_frame
+        anim_ob.end_marker = m
         
         for node in animation.nodes:
             ob = bpy.data.objects[node.name]
@@ -281,8 +286,15 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         mdl_object.from_file(filename)
         
         self.import_geometry(mdl_object, filename)
-        print("Number of nodes in file: %i\tnumber of objects in scene: %i" % (len(mdl_object.geometry.nodes),len(self.objects)))
         self.import_animations(mdl_object)
+        
+        #the basic settings for the models are assigned to the active scene object
+        scene = bpy.context.scene
+        scene.nwn_props.root_object_name = mdl_object.name
+        
+        scene.nwn_props.classification = mdl_object.classification
+        scene.nwn_props.supermodel = mdl_object.supermodel
+        scene.nwn_props.animationscale = float(mdl_object.setanimationscale)
         
         
 
