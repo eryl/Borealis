@@ -35,7 +35,7 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
 
     objects = []
     context = None
-    
+    static_poses = {}
     def execute(self, context):
         self.context = context
         paths = [os.path.join(self.directory, name.name) for name in self.files]
@@ -192,6 +192,13 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         self.current_frame = 1
         bpy.ops.anim.change_frame(frame=self.current_frame)
         
+        #set up the information for the static poses
+        for ob in self.objects:
+            poses = {}
+            poses['location'] = ob.location[:]
+            poses['rotation_axis_angle'] = ob.rotation_axis_angle[:]
+            self.static_poses[ob] = poses
+            
         self.import_animation(mdl_object.animations[0])
         
         #end by moving 10 frames ahead, like the max-script does
@@ -212,27 +219,24 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         #we start by setting the static pose before and after the animation
         bpy.ops.anim.change_frame(frame=start_frame - 1 )
         for ob in self.objects:
-            if ob.name == "torso_g":
-                print("setting static pose at frame %i" % self.context.scene.frame_current)
-                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
+            #reset the static pose
+            static_pose = self.static_poses[ob]
+            ob.rotation_axis_angle = static_pose["rotation_axis_angle"]
+            ob.location = static_pose["location"]
+            
             ob.keyframe_insert(data_path='location', frame=self.current_frame, group="Location")
             ob.keyframe_insert(data_path='rotation_axis_angle', frame=self.current_frame, group="Rotation")
         
         bpy.ops.anim.change_frame(frame=end_frame + 1)
         for ob in self.objects:
-            if ob.name == "torso_g":
-                print("setting static pose at frame %i" % self.context.scene.frame_current)
-                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
+            #reset the static pose
+            static_pose = self.static_poses[ob]
+            ob.rotation_axis_angle = static_pose["rotation_axis_angle"]
+            ob.location = static_pose["location"]
+            
             ob.keyframe_insert(data_path='location', frame=end_frame+1, group="Location")
             ob.keyframe_insert(data_path='rotation_axis_angle', frame=end_frame+1, group="Rotation")
         
-        bpy.ops.anim.change_frame(frame=end_frame + 9)
-        for ob in self.objects:
-            if ob.name == "torso_g":
-                print("setting static pose at frame %i" % self.context.scene.frame_current)
-                print("Location: %s, Orientation: %s" % (str(ob.location), str(ob.rotation_axis_angle[:])))
-            ob.keyframe_insert(data_path='location', group="Location")
-            ob.keyframe_insert(data_path='rotation_axis_angle', group="Rotation")
             
         bpy.ops.anim.change_frame(frame=start_frame)
         #go back to the start frame and set the marker
@@ -277,6 +281,7 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         mdl_object.from_file(filename)
         
         self.import_geometry(mdl_object, filename)
+        print("Number of nodes in file: %i\tnumber of objects in scene: %i" % (len(mdl_object.geometry.nodes),len(self.objects)))
         self.import_animations(mdl_object)
         
         
