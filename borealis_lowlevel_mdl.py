@@ -20,7 +20,13 @@ class Model(object):
    
         self.geometry = Geometry()
         self.animations = []
+    
+    def new_geometry_node(self, type, name):
+       return self.geometry.new_node(type, name)
         
+    
+    def new_animation(self):
+        pass
     
     def from_file(self, filename, ascii=True):
         if ascii:
@@ -110,26 +116,17 @@ class Model(object):
     
         return out_string
 
-class Property:
-    value_written = False
-    
-    def __init__(self, name, datatype=float, has_blender_eq=False):
-        self.name = name
-        self.datatype = datatype
-        self.has_blender_eq = has_blender_eq
-        
-    def read_value(self, current_line, model_data):
-        pass
-    
-    def __str__(self):
-        return self.name
-    
 ### Geometry classes ### 
 
 class Geometry:
+   
+    
     def __init__(self):
         self.name = ""
         self.nodes = []
+        self.node_classes = {"dummy": NodeDummy, "trimesh" : NodeTrimesh,
+                        "danglymesh" : NodeDanglymesh, "skin" : NodeSkin, 
+                        "emitter" : NodeEmitter, "light" : NodeLight}
     
     def from_file(self, name, model_data):
         self.name = name
@@ -167,8 +164,12 @@ class Geometry:
                 
                 node.from_file(model_data)
                 self.nodes.append(node)
-            
-            
+    
+    def new_node(self, type, name):
+        node_class = self.node_classes[type]
+        node = node_class(name)
+        self.nodes.append(node)
+        return node
             
     def __str__(self):
         out_string = "beginmodelgeom %s\n" % self.name
@@ -195,7 +196,20 @@ class Node:
         
         for prop in props:
             self.properties[prop.name] = copy.copy(prop)
-        
+    
+    def __getitem__(self, key):
+        if key in self.properties:
+            return self.properties[key]
+        else:
+            raise KeyError
+    
+    def __setitem__(self, key, value):
+        if key in self.properties:
+            prop = self.properties[key]
+            prop.update_value(value)
+        else:
+            raise KeyError
+    
     def from_file(self, model_data):
         while model_data:
             current_line = model_data.pop(0)

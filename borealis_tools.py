@@ -5,7 +5,6 @@ Created on 11 aug 2010
 '''
 import bpy, mathutils
 
-
 class BorealisSettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
@@ -127,16 +126,59 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
         bpy.utils.register_class(AnimationProperties)
         cls.animation_props = bpy.props.PointerProperty(type = AnimationProperties)
         
+class OBJECT_PT_nwn_animations(bpy.types.Panel):
+    bl_idname = "OBJECT_PT_nwn_animations"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_label = "NWN Animation tools"
+    bl_context = "scene"
+    
+    def draw(self, context):
+        layout = self.layout
+        ### animation settings ###
+        box = layout.box()
+        
+        box.label(text="Animations")
+        
+        anim_props = context.scene.nwn_props.animation_props
+        
+        row = box.row()
+        col = row.column()
+
+        col.template_list(anim_props, "animations",
+                          anim_props, "animation_index",
+                          rows=3)
+        
+        col = row.column(align=True)
+        col.operator("scene.add_nwn_anim", icon='ZOOMIN', text="")
+        col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
+        
+        if anim_props.animations:
+            index = anim_props.animation_index
+            animation = anim_props.animations[index]
+
+            anim_row = box.row()
+            anim_row.prop(animation, "name")
+            
+            anim_row = box.row()
+            start_marker = animation.get_start_marker()
+            end_marker = animation.get_end_marker()
+            anim_row.prop(start_marker, "frame", text="Start frame")
+            anim_row.prop(end_marker, "frame", text="End frame")
+        
+        box.row().operator("scene.nwn_anim_focus")
+
+            
 class BorealisTools(bpy.types.Panel):
     bl_idname = "OBJECT_PT_nwn_tools"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_label = "NWN Model tools"
     bl_context = "object"
-
-    node_list = ["dummy","trimesh","danglymesh","skin","light","emitter"]
-    node_triplets = [(type, type, type) for type in node_list]
-    node_type  = bpy.props.EnumProperty(node_triplets, name="node_type")
+    
+    @classmethod
+    def register(cls):
+        register()
     
     @classmethod
     def poll(cls, context):
@@ -222,35 +264,6 @@ class BorealisTools(bpy.types.Panel):
             for prop in borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(node_type):
                 if prop in bpy.types.BorealisNodeProps.properties:
                     col_flow.prop(obj.nwn_props.node_properties, prop.name)
-            
-            
-            
-    
-    @classmethod
-    def register(cls):
-        bpy.utils.register_class(BorealisSettings)
-        bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisSettings)
-        
-        
-        bpy.utils.register_class(BorealisBasicProperties)
-        bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=BorealisBasicProperties)
-        
-        bpy.utils.register_class(SCENE_OT_add_nwn_animation)
-        bpy.utils.register_class(SCENE_OT_remove_nwn_animation)
-        
-        #we set different node type enum lists, to make sure only node types relevant to the 
-        #selected blender object are allowed
-        bpy.types.Mesh.nwn_node_type = bpy.props.EnumProperty(items = [("trimesh","trimesh","trimesh"),
-                                        ("danglymesh","danglymesh","danglymesh"),
-                                        ("skin","skin","skin"),
-                                        ("emitter","emitter","emitter"),
-                                        ("aabb","aabb","aabb")],
-                                       name = "Node Type",
-                                       description = "The NWN Node type of this object")
-        
-        bpy.types.Lamp.nwn_node_type = bpy.props.EnumProperty(items = [("light","light","light")],
-                                       name = "Node Type",
-                                       description = "The NWN Node type of this object")
 
 
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
@@ -289,18 +302,29 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     bl_label = "Add a new NWN animation"
     
     name = bpy.props.StringProperty("Animation name")
+    length = bpy.props.IntProperty("Animation length (frames)", default=50, min=0)
     
     def execute(self, context):
         print("add animation")
         scene = context.scene
         #find the last marker to get a good place to insert the new animation
+        last_frame = 0
+        for marker in scene.timeline_markers:
+            if marker.frame > last_frame:
+                last_frame = marker.frame
+        
+        start_frame = last_frame + 10
+        end_frame = start_frame + self.length
+        
         anim_ob = scene.nwn_props.animation_props.animations.add()
         anim_ob.name = self.name
         
         marker = scene.timeline_markers.new(self.name + "_start")
+        marker.frame = start_frame
         anim_ob.start_marker = marker
         
         marker = scene.timeline_markers.new(self.name + "_end")
+        marker.frame = end_frame
         anim_ob.end_marker = marker
         
         context.area.tag_redraw() #force the gui to redraw
@@ -311,3 +335,61 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
+
+class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
+    bl_idname ="scene.nwn_anim_focus"
+    bl_label = "Focus on animation"
+    bl_description = "Adjust scene start and end frame to the selected animation"
+    
+    @classmethod
+    def poll(cls, context):
+        if context.scene.nwn_props.animation_props.animations:
+            return True
+        else:
+            return False
+    
+    def execute(self, context):
+        scene = context.scene
+
+        anim_props = context.scene.nwn_props.animation_props
+        index = anim_props.animation_index
+        
+        animation = anim_props.animations[index]
+        start_frame = animation.start_frame
+        scene.frame_start = start_frame
+        scene.frame_end = animation.end_frame
+        scene.frame_current = start_frame
+        scene.frame_start = start_frame # for some reason theres a bug if frame_start is set only once
+        
+        return {'FINISHED'}
+
+
+def register():
+    bpy.utils.register_class(BorealisSettings)
+    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisSettings)
+    
+    bpy.utils.register_class(BorealisBasicProperties)
+    bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=BorealisBasicProperties)
+    
+    bpy.utils.register_class(SCENE_OT_add_nwn_animation)
+    bpy.utils.register_class(SCENE_OT_remove_nwn_animation)
+    bpy.utils.register_class(SCENE_OT_nwn_anim_focus)
+    bpy.utils.register_class(OBJECT_PT_nwn_animations)
+    #bpy.utils.register_class(BorealisTools)
+    
+    #we set different node type enum lists, to make sure only node types relevant to the 
+    #selected blender object are allowed
+    bpy.types.Mesh.nwn_node_type = bpy.props.EnumProperty(items = [("trimesh","trimesh","trimesh"),
+                                    ("danglymesh","danglymesh","danglymesh"),
+                                    ("skin","skin","skin"),
+                                    ("emitter","emitter","emitter"),
+                                    ("aabb","aabb","aabb")],
+                                   name = "Node Type",
+                                   description = "The NWN Node type of this object")
+    
+    bpy.types.Lamp.nwn_node_type = bpy.props.EnumProperty(items = [("light","light","light")],
+                                   name = "Node Type",
+                                   description = "The NWN Node type of this object")
+
+def unregister():
+    pass

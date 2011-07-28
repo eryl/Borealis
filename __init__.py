@@ -13,12 +13,13 @@ bl_info = {
 
 
 # To support reload properly, try to access a package var, if it's there, reload everything
-if "bpy" in locals():
-    import imp
-    if "export_ply" in locals():
-        imp.reload(export_ply)
-    if "import_ply" in locals():
-        imp.reload(import_ply)
+#if "bpy" in locals():
+#    import imp
+#    if "borealis_tools" in locals():
+#        imp.reload(borealis_tools)
+#    if "import_ply" in locals():
+#        imp.reload(import_ply)
+#
 
 import bpy
 
@@ -30,27 +31,33 @@ import bpy
 def register():
     from . import borealis_tools
     from . import borealis_import
+    from . import borealis_export
     bpy.utils.register_class(borealis_tools.BorealisTools)
     bpy.utils.register_class(borealis_import.BorealisImport)
+    bpy.utils.register_class(borealis_export.BorealisExport)
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
     from . import borealis_tools
     from . import borealis_import
+    from . import borealis_export
     bpy.utils.unregister_class(borealis_import.BorealisImport)
-    bpy.utils.unregister_class(borealis_tools.BorealisTools)
+    bpy.utils.unregister_class(borealis_export.BorealisExport)
+    bpy.utils.unregister_module(borealis_tools)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
  
 def menu_import(self, context):
-    self.layout.operator(BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
+    from . import borealis_import
+    self.layout.operator(borealis_import.BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
 
 
 def menu_export(self, context):
     import os
+    from . import borealis_export
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".mdl"
-    self.layout.operator(BorealisExport.bl_idname, text="Nwn Mdl(.mdl)").filepath = default_path
+    self.layout.operator(borealis_export.BorealisExport.bl_idname, text="Nwn Mdl(.mdl)").filepath = default_path
 
 if __name__ == "__main__":
     register()
