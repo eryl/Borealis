@@ -283,6 +283,15 @@ class Animation:
         self.transtime = 0
         self.animroot = ""
         self.nodes = []
+        self.node_classes = {"dummy": AnimationNodeDummy, "trimesh" : AnimationNodeTrimesh,
+                        "danglymesh" : AnimationNodeDanglymesh, "skin" : AnimationNodeSkin, 
+                        "emitter" : AnimationNodeEmitter, "light" : AnimationNodeLight}
+    
+    def new_animation(self, type, name):
+        node_class = self.node_classes[type]
+        animation_node = node_class(name)
+        self.node.append(animation_node)
+        return animation_node
 
     def from_file(self, model_data):
         while model_data:

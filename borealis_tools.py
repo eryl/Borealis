@@ -39,7 +39,7 @@ class BorealisSettings(bpy.types.PropertyGroup):
             ##The order of the cases are important since some properties are subtypes of other
             if isinstance(prop, borealis_mdl_definitions.ColorProperty):
                 attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
-                                                                          subtype='COLOR')
+                                                                          subtype='COLOR', min = 0, max = 1)
                 attribute_dict["properties"].append(prop)
             
             elif isinstance(prop, borealis_mdl_definitions.StringProperty):
