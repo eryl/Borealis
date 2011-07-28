@@ -106,6 +106,7 @@ class Animation(bpy.types.PropertyGroup):
 class AnimationProperties(bpy.types.PropertyGroup):
     current_animation = bpy.props.IntProperty(name = "current animation")
     animations = bpy.props.CollectionProperty(type=Animation)
+    animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")
     
      
 
@@ -166,19 +167,33 @@ class BorealisTools(bpy.types.Panel):
         ### animation settings ###
         box = layout.box()
         
-        box.label(text="Animation settings")
-        box.operator("scene.add_nwn_anim", text = "Add new animation", icon = 'ZOOMIN')
-        for animation in context.scene.nwn_props.animation_props.animations:
-            anim_box = box.box()
-            anim_row = anim_box.row()
+        box.label(text="Animations")
+        
+        anim_props = context.scene.nwn_props.animation_props
+        
+        row = box.row()
+        col = row.column()
+
+        col.template_list(anim_props, "animations",
+                          anim_props, "animation_index",
+                          rows=3)
+        
+        col = row.column(align=True)
+        col.operator("scene.add_nwn_anim", icon='ZOOMIN', text="")
+        col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
+        
+        if anim_props.animations:
+            index = anim_props.animation_index
+            animation = anim_props.animations[index]
+
+            anim_row = box.row()
             anim_row.prop(animation, "name")
-            anim_row.operator(operator="scene.remove_nwn_anim", text="", icon="X", emboss=False)
             
-            anim_row = anim_box.row()
+            anim_row = box.row()
             start_marker = animation.get_start_marker()
             end_marker = animation.get_end_marker()
-            anim_row.prop(start_marker, "frame", text="start_frame")
-            anim_row.prop(end_marker, "frame", text="end_frame")
+            anim_row.prop(start_marker, "frame", text="Start frame")
+            anim_row.prop(end_marker, "frame", text="End frame")
         
         row = layout.row()
         row.prop(obj.nwn_props, "is_nwn_object", text="Toggle NWN object")
@@ -242,9 +257,32 @@ class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     bl_idname ="scene.remove_nwn_anim"
     bl_label = "Remove NWN animation"
     
+    animation_name = bpy.props.StringProperty("Name of animation to remove")
+    
+    @classmethod
+    def poll(cls, context):
+        if context.scene.nwn_props.animation_props.animations:
+            return True
+        else:
+            return False
+        
     def execute(self, context):
-        print("remove animation")
+        anim_props = context.scene.nwn_props.animation_props
+        index = anim_props.animation_index
+        scene = context.scene
+        
+        animation = anim_props.animations[index]
+        m = animation.start_marker
+        scene.timeline_markers.remove(m)
+        m = animation.end_marker
+        scene.timeline_markers.remove(m)
+        anim_props.animations.remove(index)
+        context.area.tag_redraw() #force the gui to redraw
         return {'FINISHED'}
+    
+    def invoke(self,context, event):
+        wm = context.window_manager
+        return wm.invoke_confirm(self, event)
     
 class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     bl_idname ="scene.add_nwn_anim"
@@ -264,6 +302,8 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
         
         marker = scene.timeline_markers.new(self.name + "_end")
         anim_ob.end_marker = marker
+        
+        context.area.tag_redraw() #force the gui to redraw
         
         return {'FINISHED'}
 
