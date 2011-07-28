@@ -210,6 +210,16 @@ class Node:
         else:
             raise KeyError
     
+    def __iter__(self):
+        return self.properties.__iter__()
+    
+    def keys(self):
+        return self.properties.keys()
+    
+    def items(self):
+        return self.properties.items()
+
+    
     def from_file(self, model_data):
         while model_data:
             current_line = model_data.pop(0)

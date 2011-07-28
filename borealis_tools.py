@@ -35,20 +35,31 @@ class BorealisSettings(bpy.types.PropertyGroup):
             if  prop.has_blender_eq:
                 continue
             
-            if isinstance(prop, borealis_mdl_definitions.StringProperty):
+            
+            ##The order of the cases are important since some properties are subtypes of other
+            if isinstance(prop, borealis_mdl_definitions.ColorProperty):
+                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
+                                                                          subtype='COLOR')
+                attribute_dict["properties"].append(prop)
+            
+            elif isinstance(prop, borealis_mdl_definitions.StringProperty):
                 attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
-            elif isinstance(prop, borealis_mdl_definitions.VectorProperty):
-                pass
+            
+            elif isinstance(prop, borealis_mdl_definitions.FloatVectorProperty):
+                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
+                attribute_dict["properties"].append(prop)
+            
             elif isinstance(prop, borealis_mdl_definitions.BooleanProperty):
                 attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
+                
             elif isinstance(prop, borealis_mdl_definitions.EnumProperty):
-                pass
-            elif isinstance(prop, borealis_mdl_definitions.ColorProperty):
-                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, 
-                                                                          subtype='COLOR')
+                items = [(name, name, name) for name in prop.enums]
+                attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
+                                                                   items = items)
                 attribute_dict["properties"].append(prop)
+            
             elif isinstance(prop, borealis_mdl_definitions.IntProperty):
                 attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
@@ -56,7 +67,9 @@ class BorealisSettings(bpy.types.PropertyGroup):
                 attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
 
-            
+            if prop.name not in attribute_dict:
+                print("Failed to add property %s of type %s" % (prop.name, prop.__class__))
+                      
         #we now create a dynamic class and register it so it will be usable by this class
         node_props_class = type(classname, (bpy.types.PropertyGroup,), attribute_dict)
         bpy.utils.register_class(node_props_class)

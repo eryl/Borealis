@@ -62,21 +62,45 @@ def export_nwn_mdl(context, **kwargs):
     mdl.supermodel = scene_props.supermodel
     mdl.setanimationscale =  scene_props.animationscale
     
-    export_node(mdl, root_object)
+    export_root(mdl, root_object)
     
     return {'FINISHED'}
 
-def export_node(mdl, obj):
+def export_root(mdl, obj):
+    node = mdl.new_geometry_node("dummy", obj.name)
+    node['parent'] = "NULL"
+
+    for child in obj.children:
+        export_node(mdl, child, obj.name)
+        
+def export_node(mdl, obj, parent):
+    
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
         node_type = obj.nwn_props.nwn_node_type
         
     node = mdl.new_geometry_node(node_type, obj.name)
+    node['parent'] = parent
     
+    print("Exporting node %s of type: %s" % (obj.name, node_type))
     
+    from . import borealis_mdl_definitions
+    
+    w, x, y, z = obj.rotation_axis_angle
+    orientation = [x, y, z, w] 
+    node['orientation'] = orientation
+    
+    node['position'] = obj.location
+    
+    for prop in borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(node_type):
+        #only export the properties which are set in the properties group
+        if prop.name in obj.nwn_props.node_properties and not prop.has_blender_eq:
+            node[prop.name] = eval("obj.nwn_props.node_properties." + prop.name)
+    
+    print(str(node))
 
     for child in obj.children:
-        export_node(mdl, child)
+        export_node(mdl, child, obj.name)
     
     
