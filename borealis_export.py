@@ -196,7 +196,15 @@ def build_animation_data(objects, animations):
                     data_dict[point.co[0]] = {}
                 data_dict[point.co[0]][attribute_name] = point.co[1]
     
+#    The date is now in the format:
+#    nodes
+#        node
+#            datapath
+#                time
+#                    x
+#                    y
+#                    z
     
-        
+    "TODO - Must get the animations to have the data of all the keyframes for their nodes"  
     
     return nodes 
