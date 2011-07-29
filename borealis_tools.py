@@ -81,7 +81,7 @@ class Animation(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
     start_marker_name = bpy.props.StringProperty(name = "Start Marker")
     end_marker_name = bpy.props.StringProperty(name = "End Marker")
-    
+    transtime = bpy.props.FloatProperty(name = "Transition time", default = 1)
     ### Since the animations are tightly coupled to the markers
     ### dynamic properties are used for it's attributes
     

@@ -25,8 +25,10 @@ class Model(object):
        return self.geometry.new_node(type, name)
         
     
-    def new_animation(self):
-        pass
+    def new_animation(self, name):
+        animation = Animation(name, self.name)
+        self.animations.append(animation)
+        return animation
     
     def from_file(self, filename, ascii=True):
         if ascii:
@@ -287,10 +289,10 @@ class Animation:
                         "danglymesh" : AnimationNodeDanglymesh, "skin" : AnimationNodeSkin, 
                         "emitter" : AnimationNodeEmitter, "light" : AnimationNodeLight}
     
-    def new_animation(self, type, name):
+    def new_node(self, type, name):
         node_class = self.node_classes[type]
         animation_node = node_class(name)
-        self.node.append(animation_node)
+        self.nodes.append(animation_node)
         return animation_node
 
     def from_file(self, model_data):

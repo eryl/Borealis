@@ -62,19 +62,20 @@ def export_nwn_mdl(context, **kwargs):
     mdl.supermodel = scene_props.supermodel
     mdl.setanimationscale =  scene_props.animationscale
     
-    export_root(mdl, root_object)
-    export_animations(context.scene, mdl, root_object)
+    exported_objects = []#this will act as an accumulator, containing the objects which has been exported
+    export_root(mdl, root_object, exported_objects)
+    export_animations(context.scene, mdl, root_object, exported_objects)
     return {'FINISHED'}
 
 
-def export_root(mdl, obj):
+def export_root(mdl, obj, acc):
     node = mdl.new_geometry_node("dummy", obj.name)
     node['parent'] = "NULL"
-
+    acc.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name)
+        export_node(mdl, child, obj.name, acc)
         
-def export_node(mdl, obj, parent):
+def export_node(mdl, obj, parent, acc):
     
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
@@ -101,39 +102,37 @@ def export_node(mdl, obj, parent):
     
     #print(str(node))
 
+    acc.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name)
+        export_node(mdl, child, obj.name, acc)
     
-def export_animations(scene, mdl,root_object):
+def export_animations(scene, mdl,root_object, exported_objects):
     animations = scene.nwn_props.animation_props.animations
     
-    animation_data = build_animation_data(scene.objects, animations)
+    animation_data = build_animation_data(exported_objects, animations)
     
-    for node, paths in animation_data.items():
-        for path,times in paths.items():
-            for time, keys in times.items():
-                print(time)
-#    for animation in animations:
-#        export_animation(animation_data, scene, animation, mdl, root_object)
+    for animation in animations:
+        export_animation(animation_data[animation.name], scene, animation, mdl, root_object)
 
 def export_animation(animation_data, scene, animation, mdl, root_object):
     fps = scene.render.fps
-    nwn_anim = mdl.new_animation(animation.name, mdl.name)
+    nwn_anim = mdl.new_animation(animation.name)
     nwn_anim.animroot = root_object.name 
     
     start_frame = animation.start_frame
     end_frame = animation.end_frame
     
     nwn_anim.length = (end_frame - start_frame) / fps
-    nwn_anim.transtime = scene.nwn_props.animation_props.transtime
+    nwn_anim.transtime = animation.transtime
     
     root_node = nwn_anim.new_node("dummy", root_object.name)
     root_node.parent = 'NULL'
     
+    
     for child in root_object.children:
-        export_animation_node(animation_data, animation, nwn_anim, mdl, child, root_object.name)
+        export_animation_node(fps, animation_data, animation, nwn_anim, mdl, child, root_object.name)
         
-def export_animation_node(animation_data, animation, nwn_anim, mdl, obj, parent):
+def export_animation_node(fps, animation_data, animation, nwn_anim, mdl, obj, parent):
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
@@ -141,9 +140,21 @@ def export_animation_node(animation_data, animation, nwn_anim, mdl, obj, parent)
     
     node = nwn_anim.new_node("dummy", obj.name)
     node['parent'] = parent
-    
+    start_frame = animation.start_frame
+    if obj.name in animation_data['nodes']:
+        if "location" in animation_data['nodes'][obj.name]:
+            locations = sorted(animation_data['nodes'][obj.name]["location"].items())
+            positionkeys = [[(time - start_frame) / fps, pos['x'], pos['y'], pos['z']] for time, pos in locations]
+            node['positionkey'] = positionkeys
+           
+        if "rotation_axis_angle" in animation_data['nodes'][obj.name]:
+            rotations = sorted(animation_data['nodes'][obj.name]["rotation_axis_angle"].items())
+            orientationkey = [[(time - start_frame) / fps, ori['x'], ori['y'], ori['z'], ori['w']] for time, ori in rotations]
+            node['orientationkey'] = orientationkey
+            
+    print(str(node))
     for child in obj.children:
-        export_animation_node(animation, mdl, child, obj.name)
+        export_animation_node(fps, animation_data, animation, nwn_anim, mdl, child, obj.name)
     
 def build_animation_data(objects, animations):
     """
@@ -162,6 +173,7 @@ def build_animation_data(objects, animations):
     #we build a mighty dictionary where the keyframe points are gathered depending on 
     #time, and not seperate channels for every object
     nodes = {}
+    times = {}
     
     for object in objects:
         nodes[object.name] = {}
@@ -195,16 +207,45 @@ def build_animation_data(objects, animations):
                 if point.co[0] not in data_dict:
                     data_dict[point.co[0]] = {}
                 data_dict[point.co[0]][attribute_name] = point.co[1]
+                
+                #this sets up a nested dictionary where the topmost keys are time-points for keyframes
+                # timepoint
+                #    nodename
+#                        data_path
+#                            attribute
+#                                value
+                    
+                if point.co[0] not in times:
+                    times[point.co[0]] = {}
+                if object.name not in times[point.co[0]]:
+                    times[point.co[0]][object.name] = {}
+                if fcurve.data_path not in times[point.co[0]][object.name]:
+                    times[point.co[0]][object.name][fcurve.data_path] = {}
+                times[point.co[0]][object.name][fcurve.data_path][attribute_name] = point.co[1]
     
-#    The date is now in the format:
-#    nodes
-#        node
-#            datapath
-#                time
-#                    x
-#                    y
-#                    z
-    
+    print(len(times))
+    times_list = sorted(times.items())
+    current_time = times_list.pop(0)
+    for animation in animation_list:
+        while(current_time[0] <= animation['end_frame']):    
+            #if we find a time which has already 'passed', it isn't part of any animation
+            #and is therefore discarded        
+            if current_time[0] >= animation['start_frame']:
+                for node, data_paths in current_time[1].items():
+                    if node not in animation['nodes']:
+                        animation['nodes'][node] = {} 
+                    for path, attributes in data_paths.items():
+                        if path not in animation['nodes'][node]:
+                            animation['nodes'][node][path] = {}
+                        animation['nodes'][node][path][current_time[0]] = attributes
+            
+            if not times_list:
+                break;
+            current_time = times_list.pop(0)        
+                
+        
+    animation_dict = dict(zip([animation['name'] for animation in animation_list],
+                               animation_list))
     "TODO - Must get the animations to have the data of all the keyframes for their nodes"  
     
-    return nodes 
+    return animation_dict 
