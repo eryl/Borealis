@@ -76,12 +76,20 @@ class BorealisSettings(bpy.types.PropertyGroup):
         
         cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
 
+class AnimationEvent(bpy.types.PropertyGroup):
+    name = bpy.props.StringProperty(name = "Name")
+    time = bpy.props.FloatProperty(name = "Time")
+    events = ["cast","hit","blur_start","blur_end",
+              "snd_footstep","snd_hitground","draw_arrow","draw_weapon"]
+    event_type = bpy.props.EnumProperty(name = "Event Type", items = [(foo, foo, foo) for foo in events])
         
 class Animation(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
     start_marker_name = bpy.props.StringProperty(name = "Start Marker")
     end_marker_name = bpy.props.StringProperty(name = "End Marker")
     transtime = bpy.props.FloatProperty(name = "Transition time", default = 1)
+    events = bpy.props.CollectionProperty(type = AnimationEvent)
+    event_index = bpy.props.IntProperty(name = "Current event")
     ### Since the animations are tightly coupled to the markers
     ### dynamic properties are used for it's attributes
     
@@ -135,6 +143,7 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
         
     @classmethod
     def register(cls):
+        bpy.utils.register_class(AnimationEvent)
         bpy.utils.register_class(Animation)
         bpy.utils.register_class(AnimationProperties)
         cls.animation_props = bpy.props.PointerProperty(type = AnimationProperties)
@@ -178,6 +187,18 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             end_marker = animation.get_end_marker()
             anim_row.prop(start_marker, "frame", text="Start frame")
             anim_row.prop(end_marker, "frame", text="End frame")
+            
+            row = box.row()
+            col = row.column()
+    
+            col.template_list(animation, "events",
+                              animation, "event_index",
+                              rows=3)
+            
+            col = row.column(align=True)
+            #col.operator("scene.add_nwn_anim_event", icon='ZOOMIN', text="")
+            #col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
+            
         
         box.row().operator("scene.nwn_anim_focus")
 
@@ -249,6 +270,8 @@ class BorealisTools(bpy.types.Panel):
             end_marker = animation.get_end_marker()
             anim_row.prop(start_marker, "frame", text="Start frame")
             anim_row.prop(end_marker, "frame", text="End frame")
+            
+            
         
         row = layout.row()
         row.prop(obj.nwn_props, "is_nwn_object", text="Toggle NWN object")
