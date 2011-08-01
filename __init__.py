@@ -12,29 +12,52 @@ bl_info = {
     'category': 'Import-Export'}
 
 
-# To support reload properly, try to access a package var, if it's there, reload everything
-#if "bpy" in locals():
-#    import imp
-#    if "borealis_tools" in locals():
-#        imp.reload(borealis_tools)
-#    if "import_ply" in locals():
-#        imp.reload(import_ply)
-#
-
 import bpy
+from bpy.props import StringProperty, CollectionProperty
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+import os
 
-#from . import borealis_lowlevel_mdl
+class BorealisImport(bpy.types.Operator, ImportHelper):
+    '''
+    Load STL triangle mesh data
+    '''
+    bl_idname = "import_mesh.nwn_mdl"
+    bl_label = "Import NWN Mdl"
 
-#from . import borealis_export
-#from . import borealis_tools
+    filename_ext = ".mdl"
+
+    filter_glob = StringProperty(default="*.mdl", options={'HIDDEN'})
+
+    files = CollectionProperty(name="File Path",
+                          description="File path used for importing "
+                                      "the MDL file",
+                          type=bpy.types.OperatorFileListElement)
+
+    directory = StringProperty(subtype='DIR_PATH')
+    
+
+
+    objects = []
+    context = None
+    static_poses = {}
+    def execute(self, context):
+        from . import borealis_import
+        
+        paths = [os.path.join(self.directory, name.name) for name in self.files]
+        if not paths:
+            paths.append(self.filepath)
+        
+        for path in paths:
+            borealis_import.import_mdl(path, context)
+            
+        return {'FINISHED'}
 
 def register():
     from . import borealis_tools
     from . import borealis_import
     from . import borealis_export
     bpy.utils.register_class(borealis_tools.BorealisTools)
-    bpy.utils.register_class(borealis_import.BorealisImport)
-    bpy.utils.register_class(borealis_export.BorealisExport)
+    bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
@@ -42,15 +65,14 @@ def unregister():
     from . import borealis_tools
     from . import borealis_import
     from . import borealis_export
-    bpy.utils.unregister_class(borealis_import.BorealisImport)
-    bpy.utils.unregister_class(borealis_export.BorealisExport)
+    bpy.utils.unregister_module(__name__)
     bpy.utils.unregister_module(borealis_tools)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
  
 def menu_import(self, context):
     from . import borealis_import
-    self.layout.operator(borealis_import.BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
+    self.layout.operator(BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
 
 
 def menu_export(self, context):
