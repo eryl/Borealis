@@ -201,7 +201,7 @@ class Node:
     
     def __getitem__(self, key):
         if key in self.properties:
-            return self.properties[key]
+            return self.properties[key].value
         else:
             raise KeyError
     
@@ -241,7 +241,7 @@ class Node:
     def get_prop_value(self, property):
         if property not in self.properties:
             return None
-        print("get_prop_value: %s, value: %s" % (property, self.properties[property].value))
+        #print("get_prop_value: %s, value: %s" % (property, self.properties[property].value))
         return self.properties[property].value
     
     def output_node(self):

@@ -17,7 +17,8 @@ class BorealisSettings(bpy.types.PropertyGroup):
                                    description="Toggles whether this object is an nwn object and should be included in exports", 
                                    default=False)
     
-    
+    danglymesh_vertexgroup = bpy.props.StringProperty(name = "Dangle Mesh vertex group")
+    skin_vg_index = bpy.props.IntProperty(name="Index of selected skin vertex group")
     @classmethod
     def register(cls):
         
@@ -26,6 +27,9 @@ class BorealisSettings(bpy.types.PropertyGroup):
         attribute_dict = {"bl_idname": classname, 
                           "bl_label" : "Neverwinter Nights Node properties", 
                           "properties" : []}
+        
+        bpy.utils.register_class(SkinVertexGroup)
+        cls.skin_vertexgroups = bpy.props.CollectionProperty(type = SkinVertexGroup)
         
         from . import borealis_mdl_definitions
         
@@ -75,6 +79,9 @@ class BorealisSettings(bpy.types.PropertyGroup):
         bpy.utils.register_class(node_props_class)
         
         cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
+    
+class SkinVertexGroup(bpy.types.PropertyGroup):
+    name = bpy.props.StringProperty(name = "Name")
 
 class AnimationEvent(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
@@ -294,14 +301,21 @@ class BorealisTools(bpy.types.Panel):
             
             from . import borealis_mdl_definitions
             
+            if node_type == "danglymesh":
+                box.label(text = "Dangly Vertex Group:")
+                box.prop_search(obj.nwn_props, "danglymesh_vertexgroup" ,obj, "vertex_groups", text = "")
+            elif node_type == "skin":
+                box.template_list(obj.nwn_props, "skin_vertexgroups", obj.nwn_props, "skin_vg_index")
+
+            
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
             col_flow = box.column_flow(columns=2)
             for prop in borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(node_type):
                 if prop in bpy.types.BorealisNodeProps.properties:
                     col_flow.prop(obj.nwn_props.node_properties, prop.name)
-
-
+            
+            
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     bl_idname ="scene.remove_nwn_anim"
     bl_label = "Remove NWN animation"
