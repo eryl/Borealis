@@ -3,7 +3,7 @@ Created on 11 aug 2010
 
 @author: erik
 '''
-import bpy, mathutils
+import bpy
 
 class BorealisSettings(bpy.types.PropertyGroup):
     """
@@ -19,6 +19,7 @@ class BorealisSettings(bpy.types.PropertyGroup):
     
     danglymesh_vertexgroup = bpy.props.StringProperty(name = "Dangle Mesh vertex group")
     skin_vg_index = bpy.props.IntProperty(name="Index of selected skin vertex group")
+    
     @classmethod
     def register(cls):
         
@@ -28,9 +29,6 @@ class BorealisSettings(bpy.types.PropertyGroup):
                           "bl_label" : "Neverwinter Nights Node properties", 
                           "properties" : []}
         
-        bpy.utils.register_class(SkinVertexGroup)
-        cls.skin_vertexgroups = bpy.props.CollectionProperty(type = SkinVertexGroup)
-        
         from . import borealis_mdl_definitions
         
         #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
@@ -38,7 +36,6 @@ class BorealisSettings(bpy.types.PropertyGroup):
             # one case for each of the different property types
             if  prop.has_blender_eq:
                 continue
-            
             
             ##The order of the cases are important since some properties are subtypes of other
             if isinstance(prop, borealis_mdl_definitions.ColorProperty):
@@ -80,15 +77,24 @@ class BorealisSettings(bpy.types.PropertyGroup):
         
         cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
     
-class SkinVertexGroup(bpy.types.PropertyGroup):
-    name = bpy.props.StringProperty(name = "Name")
 
 class AnimationEvent(bpy.types.PropertyGroup):
+    def update_name(self, foo):
+        self.name = "%s %.4g" % (self.type, self.time,)
     name = bpy.props.StringProperty(name = "Name")
-    time = bpy.props.FloatProperty(name = "Time")
     events = ["cast","hit","blur_start","blur_end",
               "snd_footstep","snd_hitground","draw_arrow","draw_weapon"]
-    event_type = bpy.props.EnumProperty(name = "Event Type", items = [(foo, foo, foo) for foo in events])
+    type = bpy.props.EnumProperty("Event Type", items = [('cast','cast','cast'),
+                                                        ('hit','hit','hit'),
+                                                        ('blur_start','blur_start','blur_start'),
+                                                        ('blur_end','blur_end','blur_end'),
+                                                        ('snd_footstep','snd_footstep','snd_footstep'), 
+                                                        ('snd_hitground','snd_hitground','snd_hitground'), 
+                                                        ('draw_arrow','draw_arrow','draw_arrow'),
+                                                        ('draw_weapon','draw_weapon','draw_weapon')],
+                                  default="hit", update = update_name)
+    time = bpy.props.FloatProperty("Time at which event occurs (in seconds)", default = 0.5, min = 0, step = 0.1, precision=2, update=update_name)
+    
         
 class Animation(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
@@ -131,10 +137,8 @@ class Animation(bpy.types.PropertyGroup):
     
     
 class AnimationProperties(bpy.types.PropertyGroup):
-    current_animation = bpy.props.IntProperty(name = "current animation")
     animations = bpy.props.CollectionProperty(type=Animation)
     animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")
-    
      
 
 class BorealisBasicProperties(bpy.types.PropertyGroup):
@@ -142,8 +146,9 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
                                                      ("character","Character","character"),
                                                      ("item","Item","Item"),
                                                      ("tile","Tile","tile")],
-                                       name = "Classification",
-                                       description = "The classification of the current model")
+                                            default = "character",
+                                            name = "Classification",
+                                            description = "The classification of the current model")
     supermodel = bpy.props.StringProperty(name = "Supermodel")
     animationscale = bpy.props.FloatProperty(name = "Animation Scale")
     root_object_name = bpy.props.StringProperty(name = "Root object name")
@@ -185,7 +190,9 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
         if anim_props.animations:
             index = anim_props.animation_index
             animation = anim_props.animations[index]
-
+            
+            box.row().operator("scene.nwn_anim_focus")
+            
             anim_row = box.row()
             anim_row.prop(animation, "name")
             
@@ -195,20 +202,29 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             anim_row.prop(start_marker, "frame", text="Start frame")
             anim_row.prop(end_marker, "frame", text="End frame")
             
-            row = box.row()
+            event_box = box.box()
+            row = event_box.row()
+            row.label(text="Events:")
+            
+            row = event_box.row()
             col = row.column()
-    
+            
             col.template_list(animation, "events",
                               animation, "event_index",
                               rows=3)
             
             col = row.column(align=True)
-            #col.operator("scene.add_nwn_anim_event", icon='ZOOMIN', text="")
-            #col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
+            col.operator("scene.add_nwn_anim_event", icon='ZOOMIN', text="")
+            col.operator("scene.remove_nwn_anim_event", icon='ZOOMOUT', text="")
             
-        
-        box.row().operator("scene.nwn_anim_focus")
-
+            if animation.events:
+                event = animation.events[animation.event_index]
+                
+                row = event_box.row()
+                row.prop(event, "type")
+                row = event_box.row()
+                row.prop(event, "time")
+  
             
 class BorealisTools(bpy.types.Panel):
     bl_idname = "OBJECT_PT_nwn_tools"
@@ -277,7 +293,6 @@ class BorealisTools(bpy.types.Panel):
             end_marker = animation.get_end_marker()
             anim_row.prop(start_marker, "frame", text="Start frame")
             anim_row.prop(end_marker, "frame", text="End frame")
-            
             
         
         row = layout.row()
@@ -384,6 +399,77 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
 
     def invoke(self, context, event):
         wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
+    bl_idname ="scene.remove_nwn_anim_event"
+    bl_label = "Remove an event from a NWN animation"
+    
+    
+    @classmethod
+    def poll(cls, context):
+        anim_props = context.scene.nwn_props.animation_props
+        
+        if anim_props.animations:
+            index = anim_props.animation_index
+            animation = anim_props.animations[index]
+        
+            if animation.events:
+                return True
+        
+        return False
+        
+    def execute(self, context):
+        anim_props = context.scene.nwn_props.animation_props
+        index = anim_props.animation_index
+        
+        animation = anim_props.animations[index]
+        
+        event_index = animation.event_index
+        animation.events.remove(event_index)
+        context.area.tag_redraw() #force the gui to redraw
+        return {'FINISHED'}
+    
+    def invoke(self,context, event):
+        wm = context.window_manager
+        return wm.invoke_confirm(self, event)
+    
+class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
+    bl_idname ="scene.add_nwn_anim_event"
+    bl_label = "Add a new event to a NWN animation"
+
+    @classmethod
+    def poll(cls, context):
+        anim_props = context.scene.nwn_props.animation_props
+        
+        if anim_props.animations:
+            return True
+        
+        return False
+    
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.prop(self.event, "type")
+        row = layout.row()
+        row.prop(self.event, "time")
+    
+    def execute(self, context):
+        self.event.update_name(None)
+        
+        context.area.tag_redraw() #force the gui to redraw
+        
+        return {'FINISHED'}
+
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        
+        anim_props = context.scene.nwn_props.animation_props
+        index = anim_props.animation_index
+        animation = anim_props.animations[index]
+        self.event = animation.events.add()
+        
         return wm.invoke_props_dialog(self)
 
 class SCENE_OT_nwn_anim_focus(bpy.types.Operator):

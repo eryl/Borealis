@@ -9,16 +9,16 @@ class Model(object):
     '''
     classdocs
     '''
-    def __init__(self):
+    def __init__(self, name = ""):
         '''
         Constructor
         '''
-        self.name = ""
+        self.name = name
         self.supermodel = ""
         self.classification = ""
         self.setanimationscale = 1
    
-        self.geometry = Geometry()
+        self.geometry = Geometry(self.name)
         self.animations = []
     
     def new_geometry_node(self, type, name):
@@ -90,7 +90,8 @@ class Model(object):
             
                     elif first_token == 'beginmodelgeom':
                         geom_name = current_line[1]
-                        self.geometry.from_file(geom_name, model_data)
+                        self.geometry.name = geom_name
+                        self.geometry.from_file(model_data)
                     
                     elif first_token == 'newanim':
                         anim_name = current_line[1]
@@ -123,16 +124,14 @@ class Model(object):
 class Geometry:
    
     
-    def __init__(self):
-        self.name = ""
+    def __init__(self, name):
+        self.name = name
         self.nodes = []
         self.node_classes = {"dummy": NodeDummy, "trimesh" : NodeTrimesh,
                         "danglymesh" : NodeDanglymesh, "skin" : NodeSkin, 
                         "emitter" : NodeEmitter, "light" : NodeLight}
     
-    def from_file(self, name, model_data):
-        self.name = name
-        
+    def from_file(self, model_data):
         while model_data:
             current_line = model_data.pop(0)
             
@@ -172,14 +171,15 @@ class Geometry:
         node = node_class(name)
         self.nodes.append(node)
         return node
-            
-    def __str__(self):
-        out_string = "beginmodelgeom %s\n" % self.name
-        for node in self.nodes:
-            out_string += str(node)
-        out_string += "endmodelgeom %s\n" % self.name
-        return out_string
     
+    def output_geometry(self):
+        yield "beginmodelgeom %s" % self.name
+        for node in self.nodes:
+            yield str(node)
+        yield "doneanim %s " % self.name
+
+    def __str__(self):
+        return "\n".join([line for line in self.output_geometry()])
 
     
     
@@ -285,6 +285,7 @@ class Animation:
         self.transtime = 0
         self.animroot = ""
         self.nodes = []
+        self.events = []
         self.node_classes = {"dummy": AnimationNodeDummy, "trimesh" : AnimationNodeTrimesh,
                         "danglymesh" : AnimationNodeDanglymesh, "skin" : AnimationNodeSkin, 
                         "emitter" : AnimationNodeEmitter, "light" : AnimationNodeLight}
@@ -314,6 +315,10 @@ class Animation:
                 
             elif current_line[0] == "animroot":
                 self.animroot = current_line[1]
+                
+            elif current_line[0] == "event":
+                self.events.append((float(current_line[1]), current_line[2]))
+                print(self.events[-1])
             
             elif current_line[0] == "node":
                 node_type = current_line[1]

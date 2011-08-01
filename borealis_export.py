@@ -24,13 +24,8 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
     filename_ext = ".mdl"
     filter_glob = StringProperty(default="*.mdl", options={'HIDDEN'})
 
-
-    use_modifiers = BoolProperty(name="Apply Modifiers", description="Apply Modifiers to the exported mesh", default=True)
-    use_normals = BoolProperty(name="Normals", description="Export Normals for smooth and hard shaded faces", default=True)
-    use_uv_coords = BoolProperty(name="UVs", description="Exort the active UV layer", default=True)
-    use_colors = BoolProperty(name="Vertex Colors", description="Exort the active vertex color layer", default=True)
-    guess_name = BoolProperty(name="Use Root Object Name", description="Use the name of the root object as the model name and filename like Neverwinter Nights expects", default=True)
-    
+    use_root_name = BoolProperty(name="Use Root Object Name", description="Use the name of the root object as the model name and filename like Neverwinter Nights expects, if false the filename will be used as the model name in the model file", default=True)
+    export_animations = BoolProperty(name="Export Animations", description="Toggle whether animations should be exported or not", default=True) 
     
     
     @classmethod
@@ -49,33 +44,50 @@ from . import borealis_lowlevel_mdl as bor
         
 
 def export_nwn_mdl(context, **kwargs):
-    mdl = bor.Model()
     scene_props = context.scene.nwn_props
     root_object = context.scene.objects[scene_props.root_object_name]
     
+    if kwargs['use_root_name']:
+        model_name = root_object.name
+    else:
+        filepath = kwargs['filepath']
+        base_name = os.path.basename(kwargs['filepath'])
+        model_name, ext = os.path.splitext(base_name)
+        
     #poll should catch this
     if not root_object:
         return {'CANCELLED'}
     
-    mdl.name = root_object.name
+    mdl = bor.Model(model_name)
     mdl.classification = scene_props.classification
     mdl.supermodel = scene_props.supermodel
     mdl.setanimationscale =  scene_props.animationscale
     
-    exported_objects = []#this will act as an accumulator, containing the objects which has been exported
-    export_root(mdl, root_object, exported_objects)
-    export_animations(context.scene, mdl, root_object, exported_objects)
+    #this will act as an accumulator, containing the objects which has been exported
+    exported_objects = []
+    export_geometry(mdl, root_object, exported_objects)
+    
+    if kwargs['export_animations']:
+        export_animations(context.scene, mdl, root_object, exported_objects)
+    
+#    if os.path.exists(kwargs['filepath']):
+#        print("Path exists")
+#    else:
+    file = open(kwargs['filepath'], 'w')
+    file.write(str(mdl))
+    file.close()
+    
     return {'FINISHED'}
 
-
-def export_root(mdl, obj, acc):
+def export_geometry(mdl, obj, exported_objects):
     node = mdl.new_geometry_node("dummy", obj.name)
     node['parent'] = "NULL"
-    acc.append(obj)
+    exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name, acc)
+        export_node(mdl, child, obj.name, exported_objects)
+    
         
-def export_node(mdl, obj, parent, acc):
+def export_node(mdl, obj, parent, exported_objects):
     
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
@@ -84,8 +96,6 @@ def export_node(mdl, obj, parent, acc):
         
     node = mdl.new_geometry_node(node_type, obj.name)
     node['parent'] = parent
-    
-    print("Exporting node %s of type: %s" % (obj.name, node_type))
     
     from . import borealis_mdl_definitions
     
@@ -103,9 +113,9 @@ def export_node(mdl, obj, parent, acc):
     if node_type in ["trimesh", "skin", "danglymesh"]:
         export_mesh(obj, node)
 
-    acc.append(obj)
+    exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name, acc)
+        export_node(mdl, child, obj.name, exported_objects)
 
 def export_mesh(obj, node):
     mesh = obj.data
@@ -231,7 +241,6 @@ def export_mesh(obj, node):
             weights.append(line)
         
         node["weights"] = weights
-        print(str(node))
         
 
 def export_animations(scene, mdl,root_object, exported_objects):
@@ -283,7 +292,6 @@ def export_animation_node(fps, animation_data, animation, nwn_anim, mdl, obj, pa
             orientationkey = [[(time - start_frame) / fps, ori['x'], ori['y'], ori['z'], ori['w']] for time, ori in rotations]
             node['orientationkey'] = orientationkey
             
-    print(str(node))
     for child in obj.children:
         export_animation_node(fps, animation_data, animation, nwn_anim, mdl, child, obj.name)
     
@@ -336,7 +344,6 @@ def build_animation_data(objects, animations):
                     times[point.co[0]][object.name][fcurve.data_path] = {}
                 times[point.co[0]][object.name][fcurve.data_path][attribute_name] = point.co[1]
     
-    print(len(times))
     times_list = sorted(times.items())
     current_time = times_list.pop(0)
     for animation in animation_list:

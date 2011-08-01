@@ -312,6 +312,12 @@ def import_animation(animation, animations_dict, current_frame, context):
     m.frame = end_frame
     anim_ob.end_marker = m
     
+    for (time, event_type) in animation.events:
+        event = anim_ob.events.add()
+        event.type = event_type
+        event.time = time
+        event.update_name(None)
+    
     for node in animation.nodes:
         for property in node.properties.values():
             if not property.value_written:
