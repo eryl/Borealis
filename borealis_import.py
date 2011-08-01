@@ -229,6 +229,9 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         bpy.ops.anim.change_frame(frame=self.current_frame)
         
         #set up the information for the static poses
+        #the animations_dict dictionary will collect all the animation data which 
+        #will later be inserted into blenders data
+
         static_poses = {}
         object_paths = {}
         animations_dict = {}
@@ -255,17 +258,6 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
             animations_dict[ob.name] = {'location' : {'x' : [], 'y' : [], 'z' : []}, 
                                         'rotation_axis_angle' : {'x' : [], 'y' : [], 'z' : [], 'w' : []}}
             
-        
-        #the animations_dict dictionary will collect all the animation data which 
-        #will later be inserted into blenders data
-        
-        
-#        animations_dict
-#            object
-#                data_path
-#                    array_id
-#                        keyframes : list
-#                            (frame, value)
 
         current_frame = 1
 
@@ -273,6 +265,8 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
             current_frame = self.set_static_frame(static_poses, animations_dict, current_frame)
             current_frame += 1
             current_frame = self.import_animation_with_direct_point_insertion(animation, animations_dict, current_frame)
+            current_frame += 1
+            current_frame = self.set_static_frame(static_poses, animations_dict, current_frame)
             current_frame += 10
             
         self.apply_animations(animations_dict, object_paths)
@@ -288,6 +282,8 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
                     fcurve.keyframe_points.add(len(values))
                     for i, value in enumerate(values):
                         fcurve.keyframe_points[i].co = value
+                        fcurve.keyframe_points[i].handle_right = value
+                        fcurve.keyframe_points[i].handle_left = value
                     
     def set_static_frame(self, static_poses, animations_dict, current_frame):
         """
@@ -308,86 +304,6 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         
         return current_frame
     
-    def import_animation_with_blender_keyinsert(self, animation):
-        """
-        This version uses blenders own way of inserting keyframes. The animations seems slightly off
-        and the function is really slow, especially for long animations
-        """
-        fps = self.context.scene.render.fps
-        
-        start_frame = self.current_frame + 1
-        length = int(animation.length * fps)
-        
-        end_frame = start_frame + length
-        
-        #we start by setting the static pose before and after the animation
-        bpy.ops.anim.change_frame(frame=start_frame - 1 )
-        for ob in self.objects:
-            #reset the static pose
-            static_pose = self.static_poses[ob]
-            ob.rotation_axis_angle = static_pose["rotation_axis_angle"]
-            ob.location = static_pose["location"]
-            
-            ob.keyframe_insert(data_path='location', frame=self.current_frame, group="Location")
-            ob.keyframe_insert(data_path='rotation_axis_angle', frame=self.current_frame, group="Rotation")
-        
-        bpy.ops.anim.change_frame(frame=end_frame + 1)
-        for ob in self.objects:
-            #reset the static pose
-            static_pose = self.static_poses[ob]
-            ob.rotation_axis_angle = static_pose["rotation_axis_angle"]
-            ob.location = static_pose["location"]
-            
-            ob.keyframe_insert(data_path='location', frame=end_frame+1, group="Location")
-            ob.keyframe_insert(data_path='rotation_axis_angle', frame=end_frame+1, group="Rotation")
-        
-            
-        bpy.ops.anim.change_frame(frame=start_frame)
-        
-        
-        anim_ob = bpy.context.scene.nwn_props.animation_props.animations.add()
-        anim_ob.name = animation.name
-        #go back to the start frame and set the marker
-        m = self.context.scene.timeline_markers.new(animation.name + "_start")
-        m.frame = start_frame
-        anim_ob.start_marker = m
-        
-        #set the end marker
-        m = self.context.scene.timeline_markers.new(animation.name + "_end")
-        m.frame = end_frame
-        anim_ob.end_marker = m
-        
-        for node in animation.nodes:
-            ob = bpy.data.objects[node.name]
-            if not ob:
-                continue
-            
-            for property in node.properties.values():
-                if not property.value_written:
-                    continue
-                if property.name == "positionkey":
-                    for time, x, y, z in property.value:
-                        key_frame = time*fps + start_frame
-#                        print("adding position key to frame %i" % key_frame)
-                        bpy.ops.anim.change_frame(frame=key_frame)
-                        
-                        
-                        
-                        ob.location = x,y,z
-                        ob.keyframe_insert(data_path='location', frame=key_frame, group="Location")
-                        
-                elif property.name == "orientationkey":
-                    for time, x, y, z, angle in property.value:
-                        key_frame = time * fps + start_frame
-#                        print("adding orientation key to frame %i" % key_frame)
-                        bpy.ops.anim.change_frame(frame = key_frame)
-                        
-                        ob.rotation_axis_angle = [angle,x,y,z]
-                        ob.keyframe_insert(data_path='rotation_axis_angle', frame=key_frame, group="Rotation")
-        
-        self.current_frame = end_frame
-        
-        
     def import_animation_with_direct_point_insertion(self, animation, animations_dict, current_frame):
         """
         This version inserts the data directly into the channels. Might break if blenders 
