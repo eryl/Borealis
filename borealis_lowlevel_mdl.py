@@ -350,6 +350,8 @@ class Animation:
         yield " "*TAB_WIDTH + "length %s" % str(self.length)
         yield " "*TAB_WIDTH + "transtime %s" % str(self.transtime)
         yield " "*TAB_WIDTH + "animroot %s" % self.animroot
+        for time, event in self.events:
+            yield " "*TAB_WIDTH + "event %.9g %s" % (time, event)
         for node in self.nodes:
             yield str(node)
         yield "doneanim %s %s" % (self.name, self.mdl_name)

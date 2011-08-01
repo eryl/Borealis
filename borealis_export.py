@@ -265,6 +265,8 @@ def export_animation(animation_data, scene, animation, mdl, root_object):
     nwn_anim.length = (end_frame - start_frame) / fps
     nwn_anim.transtime = animation.transtime
     
+    for event in animation.events:
+        nwn_anim.events.append((event.time, event.type))
     root_node = nwn_anim.new_node("dummy", root_object.name)
     root_node.parent = 'NULL'
     
