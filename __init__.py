@@ -1,14 +1,14 @@
 bl_info = {
-    'name': 'Neverwinter Mdl importer',
+    'name': 'Neverwinter Mdl importer/exporter',
     'author': 'Erik Ylipää',
     'version': '0.1',
     'blender': (2, 5, 8),
-    'location': 'File > Import-Export > Nwn mdl ',
-    'description': 'Import Neverwinter Nights mdl files',
+    'location': 'File > Import-Export > Neverwinter ;dl ',
+    'description': 'Import and Exåprt Neverwinter Nights Mdl files',
     'warning': '', # used for warning icon and text in addons panel
     'wiki_url': '',
     'tracker_url': '',
-    'support': 'OFFICIAL',
+    'support': 'UNOFFICIAL',
     'category': 'Import-Export'}
 
 
@@ -19,7 +19,7 @@ import os
 
 class BorealisImport(bpy.types.Operator, ImportHelper):
     '''
-    Load STL triangle mesh data
+    Import Neverwinter Nights model in ascii format
     '''
     bl_idname = "import_mesh.nwn_mdl"
     bl_label = "Import NWN Mdl"
@@ -34,12 +34,7 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
                           type=bpy.types.OperatorFileListElement)
 
     directory = StringProperty(subtype='DIR_PATH')
-    
 
-
-    objects = []
-    context = None
-    static_poses = {}
     def execute(self, context):
         from . import borealis_import
         
@@ -53,27 +48,26 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 def register():
-    from . import borealis_tools
+    from . import properties
+    from . import borealis_gui
     from . import borealis_import
     from . import borealis_export
-    bpy.utils.register_class(borealis_tools.BorealisTools)
     bpy.utils.register_module(__name__)
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
-    from . import borealis_tools
+    from . import properties
+    from . import borealis_gui
     from . import borealis_import
     from . import borealis_export
     bpy.utils.unregister_module(__name__)
-    bpy.utils.unregister_module(borealis_tools)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
  
 def menu_import(self, context):
     from . import borealis_import
     self.layout.operator(BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
-
 
 def menu_export(self, context):
     import os
@@ -83,4 +77,3 @@ def menu_export(self, context):
 
 if __name__ == "__main__":
     register()
-    print("foo")

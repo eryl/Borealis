@@ -212,10 +212,10 @@ class Node:
         
         self.name = name
         try:
-            from . import borealis_mdl_definitions
+            from . import borealis_basic_types
         except ValueError:
-            import borealis_mdl_definitions
-        props = borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(self.type)
+            import borealis_basic_types
+        props = borealis_basic_types.GeometryNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         import copy
@@ -389,10 +389,10 @@ class AnimationNode(Node):
         self.name = name
         
         try:
-            from . import borealis_mdl_definitions
+            from . import borealis_basic_types
         except ValueError:
-            import borealis_mdl_definitions
-        props = borealis_mdl_definitions.AnimationNodeProperties.get_node_properties(self.type)
+            import borealis_basic_types
+        props = borealis_basic_types.AnimationNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         import copy

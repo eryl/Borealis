@@ -7,7 +7,7 @@ Created on 11 aug 2010
 import bpy
 import os
 
-from . import borealis_lowlevel_mdl
+from . import borealis_mdl
 
 IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
 DEFAULT_IMG_SIZE = 128
@@ -16,7 +16,7 @@ def import_mdl(filename, context):
     """
     Imports a Neverwinter Nights model
     """
-    mdl_object = borealis_lowlevel_mdl.Model()
+    mdl_object = borealis_mdl.Model()
     mdl_object.from_file(filename)
     
     objects = []

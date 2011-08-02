@@ -40,7 +40,7 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
         
         return export_nwn_mdl(context, **self.as_keywords(ignore=("check_existing", "filter_glob")))
 
-from . import borealis_lowlevel_mdl as bor
+from . import borealis_mdl
         
 
 def export_nwn_mdl(context, **kwargs):
@@ -58,7 +58,7 @@ def export_nwn_mdl(context, **kwargs):
     if not root_object:
         return {'CANCELLED'}
     
-    mdl = bor.Model(model_name)
+    mdl = borealis_mdl.Model(model_name)
     mdl.classification = scene_props.classification
     mdl.supermodel = scene_props.supermodel
     mdl.setanimationscale =  scene_props.animationscale
@@ -97,7 +97,7 @@ def export_node(mdl, obj, parent, exported_objects):
     node = mdl.new_geometry_node(node_type, obj.name)
     node['parent'] = parent
     
-    from . import borealis_mdl_definitions
+    from . import borealis_basic_types
     
     w, x, y, z = obj.rotation_axis_angle
     orientation = [x, y, z, w] 
@@ -105,7 +105,7 @@ def export_node(mdl, obj, parent, exported_objects):
     
     node['position'] = obj.location
     
-    for prop in borealis_mdl_definitions.GeometryNodeProperties.get_node_properties(node_type):
+    for prop in borealis_basic_types.GeometryNodeProperties.get_node_properties(node_type):
         #only export the properties which are set in the properties group
         if prop.name in obj.nwn_props.node_properties and not prop.has_blender_eq:
             node[prop.name] = eval("obj.nwn_props.node_properties." + prop.name)
