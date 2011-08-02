@@ -1,3 +1,4 @@
+#!/usr/bin/python
 '''
 Created on 10 aug 2010
 
@@ -5,6 +6,29 @@ Created on 10 aug 2010
 '''
 TAB_WIDTH = 2
 
+def compare(file1, file2):
+    import os
+    print("Comparing file: %s with %s" % (os.path.basename(file1), os.path.basename(file2)))
+    mdl1 = Model()
+    mdl2 = Model()
+    
+    mdl1.from_file(file1, True)
+    mdl2.from_file(file2, True)
+    
+    #compare the geometry nodes
+    for node1 in mdl1.geometry.nodes:
+        for node2 in mdl2.geometry.nodes:
+            if node1.name == node2.name:
+                if node1.type != node2.type:
+                    print("Differing node types; node %s\tmdl1: %s\tmdl2: %s" % 
+                           (node1.name, node1.type, node2,type ))
+                for name, prop in node1.properties.items():
+                    if node2[name] != node1[name]:
+                        print("Property %s differs\tmdl1: %s\tmdl2: %s" %
+                              (name, str(node2[name]), str(node1[name])))
+                break   
+        
+        
 class Model(object):
     '''
     classdocs
@@ -395,9 +419,13 @@ class AnimationNodeLight(AnimationNode):
     type = "light"
     
 if __name__ == "__main__":
-    mdl = Model()
-    mdl.from_file("c_allip.mdl")
+    #mdl = Model()
+    #mdl.from_file("c_allip.mdl")
     #mdl = Model("c_drggreen.mdl.txt")
     
-    print(mdl)
+    #print(mdl)
+    import sys
+    argv = sys.argv
+    #compare(*argv[1:3])
+    compare("c_allip.mdl", "untitled.mdl")
     
