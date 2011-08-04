@@ -5,6 +5,29 @@ Created on 2 aug 2011
 '''
 import bpy
 
+def register():
+    from . import properties
+    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=properties.BorealisSettings)
+    bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=properties.BorealisBasicProperties)
+    
+    
+    #we set different node type enum lists, to make sure only node types relevant to the 
+    #selected blender object are allowed
+    bpy.types.Mesh.nwn_node_type = bpy.props.EnumProperty(items = [("trimesh","trimesh","trimesh"),
+                                    ("danglymesh","danglymesh","danglymesh"),
+                                    ("skin","skin","skin"),
+                                    ("emitter","emitter","emitter"),
+                                    ("aabb","aabb","aabb")],
+                                   name = "Node Type",
+                                   description = "The NWN Node type of this object")
+    
+    bpy.types.Lamp.nwn_node_type = bpy.props.EnumProperty(items = [("light","light","light")],
+                                   name = "Node Type",
+                                   description = "The NWN Node type of this object")
+
+def unregister():
+    pass
+
 class BorealisSettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
