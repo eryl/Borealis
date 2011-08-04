@@ -49,6 +49,7 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
 def register():
     from . import properties
     from . import borealis_gui
+    from . import borealis_operators
     from . import borealis_import
     from . import borealis_export
     bpy.utils.register_module(__name__)
@@ -58,6 +59,7 @@ def register():
 def unregister():
     from . import properties
     from . import borealis_gui
+    from . import borealis_operators
     from . import borealis_import
     from . import borealis_export
     bpy.utils.unregister_module(__name__)

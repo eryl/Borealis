@@ -5,6 +5,23 @@ Created on 11 aug 2010
 '''
 import bpy
 
+class OBJECT_PT_nwn_basic_settings(bpy.types.Panel):
+    bl_idname = "OBJECT_PT_nwn_basic_settings"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_label = "NWN Basic Model Settings"
+    bl_context = "scene"
+    
+    def draw(self, context):
+        box = self.layout.box()
+        
+        box.label(text="Basic model settings")
+        box.prop(context.scene.nwn_props, "classification")
+        box.prop(context.scene.nwn_props, "supermodel")
+        box.prop(context.scene.nwn_props, "animationscale")
+        box.prop_search(context.scene.nwn_props, "root_object_name", bpy.data, "objects")
+        
+
 class OBJECT_PT_nwn_animations(bpy.types.Panel):
     bl_idname = "OBJECT_PT_nwn_animations"
     bl_space_type = 'PROPERTIES'
@@ -100,45 +117,7 @@ class BorealisTools(bpy.types.Panel):
             
             return
         
-        box = layout.box()
-        
-        box.label(text="Basic model settings")
-        box.prop(context.scene.nwn_props, "classification")
-        box.prop(context.scene.nwn_props, "supermodel")
-        box.prop(context.scene.nwn_props, "animationscale")
-        box.prop_search(context.scene.nwn_props, "root_object_name", bpy.data, "objects")
-        
-        ### animation settings ###
-        box = layout.box()
-        
-        box.label(text="Animations")
-        
-        anim_props = context.scene.nwn_props.animation_props
-        
-        row = box.row()
-        col = row.column()
-
-        col.template_list(anim_props, "animations",
-                          anim_props, "animation_index",
-                          rows=3)
-        
-        col = row.column(align=True)
-        col.operator("scene.add_nwn_anim", icon='ZOOMIN', text="")
-        col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
-        
-        if anim_props.animations:
-            index = anim_props.animation_index
-            animation = anim_props.animations[index]
-
-            anim_row = box.row()
-            anim_row.prop(animation, "name")
-            
-            anim_row = box.row()
-            start_marker = animation.get_start_marker()
-            end_marker = animation.get_end_marker()
-            anim_row.prop(start_marker, "frame", text="Start frame")
-            anim_row.prop(end_marker, "frame", text="End frame")
-            
+             
         
         row = layout.row()
         row.prop(obj.nwn_props, "is_nwn_object", text="Toggle NWN object")

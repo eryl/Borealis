@@ -208,8 +208,6 @@ def setup_texture(mesh, node, filename):
         uv_face.uv2 = texture_verts[nwn_uv_face[1]]
         uv_face.uv3 = texture_verts[nwn_uv_face[2]]
 
-
-
 def import_animations(mdl_object, context, objects):
     """
     Imports all animations in a single action, as a long timestrip
