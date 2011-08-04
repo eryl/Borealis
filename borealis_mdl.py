@@ -107,7 +107,7 @@ class Model(object):
                         self.supermodel = current_line[2]
             
                     elif first_token == 'classification':
-                        self.classification = current_line[1]
+                        self.classification = str(current_line[1]).lower()
                         
                     elif first_token == 'setanimationscale':
                         self.setanimationscale = current_line[1]
@@ -419,13 +419,13 @@ class AnimationNodeLight(AnimationNode):
     type = "light"
     
 if __name__ == "__main__":
-    #mdl = Model()
-    #mdl.from_file("c_allip.mdl")
+    mdl = Model()
+    mdl.from_file("c_werewolf.mdl")
     #mdl = Model("c_drggreen.mdl.txt")
     
     #print(mdl)
-    import sys
-    argv = sys.argv
+    #import sys
+    #argv = sys.argv
     #compare(*argv[1:3])
-    compare("c_allip.mdl", "untitled.mdl")
+    #compare("c_allip.mdl", "untitled.mdl")
     

@@ -29,42 +29,42 @@ class BorealisSettings(bpy.types.PropertyGroup):
                           "bl_label" : "Neverwinter Nights Node properties", 
                           "properties" : []}
         
-        from . import borealis_mdl_definitions
+        from . import borealis_basic_types
         
         #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
-        for prop in borealis_mdl_definitions.GeometryNodeProperties.get_properties():
+        for prop in borealis_basic_types.GeometryNodeProperties.get_properties():
             # one case for each of the different property types
             if  prop.has_blender_eq:
                 continue
             
             ##The order of the cases are important since some properties are subtypes of other
-            if isinstance(prop, borealis_mdl_definitions.ColorProperty):
+            if isinstance(prop, borealis_basic_types.ColorProperty):
                 attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
                                                                           subtype='COLOR', min = 0, max = 1)
                 attribute_dict["properties"].append(prop)
             
-            elif isinstance(prop, borealis_mdl_definitions.StringProperty):
+            elif isinstance(prop, borealis_basic_types.StringProperty):
                 attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
             
-            elif isinstance(prop, borealis_mdl_definitions.FloatVectorProperty):
+            elif isinstance(prop, borealis_basic_types.FloatVectorProperty):
                 attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
                 attribute_dict["properties"].append(prop)
             
-            elif isinstance(prop, borealis_mdl_definitions.BooleanProperty):
+            elif isinstance(prop, borealis_basic_types.BooleanProperty):
                 attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
                 
-            elif isinstance(prop, borealis_mdl_definitions.EnumProperty):
+            elif isinstance(prop, borealis_basic_types.EnumProperty):
                 items = [(name, name, name) for name in prop.enums]
                 attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
                                                                    items = items)
                 attribute_dict["properties"].append(prop)
             
-            elif isinstance(prop, borealis_mdl_definitions.IntProperty):
+            elif isinstance(prop, borealis_basic_types.IntProperty):
                 attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
-            elif isinstance(prop, borealis_mdl_definitions.FloatProperty):
+            elif isinstance(prop, borealis_basic_types.FloatProperty):
                 attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
                 attribute_dict["properties"].append(prop)
 

@@ -3,12 +3,11 @@ bl_info = {
     'author': 'Erik Ylipää',
     'version': '0.1',
     'blender': (2, 5, 8),
-    'location': 'File > Import-Export > Neverwinter ;dl ',
-    'description': 'Import and Exåprt Neverwinter Nights Mdl files',
+    'location': 'File > Import-Export > Neverwinter',
+    'description': 'Import and Export Bioware Neverwinter Nights Models files (.mdl)',
     'warning': '', # used for warning icon and text in addons panel
     'wiki_url': '',
     'tracker_url': '',
-    'support': 'UNOFFICIAL',
     'category': 'Import-Export'}
 
 

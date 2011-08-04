@@ -69,8 +69,17 @@ class MatrixProperty(Property):
     data_type = str
     def read_value(self, current_line, model_data):
         self.value = []
+        #if the current line has less than two tokens, the list is terminated with an endlist 
+        #token instead of a given number of rows
         if len(current_line) < 2:
-            pass
+            done_reading = False
+            while not done_reading:
+                line = model_data.pop(0)
+                if not line: #skip empty lines
+                    continue
+                if line[0] == "endlist":
+                    break
+                self.value.append([self.data_type(value) for value in line])
         else:
             lines = int(current_line[-1])
             while lines:
@@ -112,6 +121,7 @@ class EnumProperty(Property):
     def __init__(self, name, nodes, enums, has_blender_eq = False):
         self.enums = enums
         Property.__init__(self, name, nodes, has_blender_eq);
+
 
 class IntProperty(NumberProperty):
     data_type = int

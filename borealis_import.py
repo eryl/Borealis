@@ -219,12 +219,17 @@ def import_animations(mdl_object, context, objects):
     object_paths = {}
     animations_dict = {}
     for ob in objects:
+        #save the location and rotation of the static pose for 
         poses = {}
         poses['location'] = ob.location[:]
         poses['rotation_axis_angle'] = ob.rotation_axis_angle[:]
         static_poses[ob] = poses
+        
+        #create animation data for the object
         ob.animation_data_create()
-        ob.animation_data.action = bpy.data.actions.new(name = "NWN animation track")
+        ob.animation_data.action = bpy.data.actions.new(name = "NWN" + ob.name)
+        
+        #Simplify access to the important fcurves 
         object_paths[ob.name] = {}
         object_paths[ob.name]['location']= {}
         object_paths[ob.name]['rotation_axis_angle']= {}
@@ -238,6 +243,7 @@ def import_animations(mdl_object, context, objects):
         object_paths[ob.name]['rotation_axis_angle']['y'] = ob.animation_data.action.fcurves.new(data_path="rotation_axis_angle", index=2)
         object_paths[ob.name]['rotation_axis_angle']['z'] = ob.animation_data.action.fcurves.new(data_path="rotation_axis_angle", index=3)
         
+        #set up the basic information in the animations_dict
         animations_dict[ob.name] = {'location' : {'x' : [], 'y' : [], 'z' : []}, 
                                     'rotation_axis_angle' : {'x' : [], 'y' : [], 'z' : [], 'w' : []}}
         
@@ -245,18 +251,24 @@ def import_animations(mdl_object, context, objects):
     current_frame = 1
 
     for animation in mdl_object.animations:
+        #set the static frame before every animation
         current_frame = set_static_frame(static_poses, animations_dict, current_frame)
         current_frame += 1
+        #import animation
         current_frame = import_animation(animation, animations_dict, current_frame, context)
         current_frame += 1
+        #set the static frame after the animation
         current_frame = set_static_frame(static_poses, animations_dict, current_frame)
         current_frame += 10
-        
+    
+    #print(animations_dict)
+    #go through the animations_dict and actually insert the data in the fcurves
     apply_animations(animations_dict, object_paths)
     
 def apply_animations(animations_dict, object_paths):
     """
-    Takes the information inserted in animations_dict and apply it to the channels of every object
+    Takes the information inserted in animations_dict and applies it to the fcurve 
+    of every object
     """
     for ob, data_paths in animations_dict.items():
         for data_path, components in data_paths.items():
@@ -264,7 +276,10 @@ def apply_animations(animations_dict, object_paths):
                 fcurve = object_paths[ob][data_path][component]
                 fcurve.keyframe_points.add(len(values))
                 for i, value in enumerate(values):
+                    #print("Setting value %s for fcurve %s" % (str(value), str(data_path + component)))
                     fcurve.keyframe_points[i].co = value
+                    #Setting the handles at the same coordinate as the point seems to be 
+                    #the easiest way of dealing with them for the moment
                     fcurve.keyframe_points[i].handle_right = value
                     fcurve.keyframe_points[i].handle_left = value
                 
@@ -333,6 +348,7 @@ def import_animation(animation, animations_dict, current_frame, context):
             elif property.name == "orientationkey":
                 for time, x, y, z, w in property.value:
                     key_frame = time * fps + start_frame
+                    
 #                        print("adding orientation key to frame %i" % key_frame)
                     animations_dict[node.name]['rotation_axis_angle']['w'].append((key_frame, w))
                     animations_dict[node.name]['rotation_axis_angle']['x'].append((key_frame, x))
