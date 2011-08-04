@@ -47,17 +47,20 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 def register():
-    from . import properties
+    from . import borealis_properties
     from . import borealis_gui
     from . import borealis_operators
     from . import borealis_import
     from . import borealis_export
+    
     bpy.utils.register_module(__name__)
+    
+    borealis_properties.register()
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
-    from . import properties
+    from . import borealis_properties
     from . import borealis_gui
     from . import borealis_operators
     from . import borealis_import

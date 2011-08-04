@@ -4,13 +4,10 @@ Created on 2 aug 2011
 @author: erik
 '''
 import bpy
-
+    
 def register():
-    from . import properties
-    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=properties.BorealisSettings)
-    bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=properties.BorealisBasicProperties)
-    
-    
+    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisSettings)
+    bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=BorealisBasicProperties)
     #we set different node type enum lists, to make sure only node types relevant to the 
     #selected blender object are allowed
     bpy.types.Mesh.nwn_node_type = bpy.props.EnumProperty(items = [("trimesh","trimesh","trimesh"),

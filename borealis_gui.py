@@ -94,11 +94,7 @@ class BorealisTools(bpy.types.Panel):
     bl_region_type = 'WINDOW'
     bl_label = "NWN Model tools"
     bl_context = "object"
-    
-    @classmethod
-    def register(cls):
-        register()
-    
+
     @classmethod
     def poll(cls, context):
         return (context.object is not None)
