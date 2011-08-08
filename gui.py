@@ -134,7 +134,7 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         if context.object is not None:
-            if obj.type.upper() in ['LAMP','MESH','EMPTY']:
+            if context.object.type.upper() in ['LAMP','MESH','EMPTY']:
                 return True
             
         return False

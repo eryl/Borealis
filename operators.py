@@ -19,13 +19,18 @@
 # <pep8 compliant>
 
 '''
-Created on 2 aug 2011
+Contains operators used for creating Neverwinter Nights models in Blender.
 
-@author: erik
+This module contains all operators used from the Borealis GUI to interact
+with Neverwinter Nights specific data in Blender.
+
+@author: Erik Ylipää
 '''
 import bpy
 
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
+    """ Operator which removes an nwn animation from the scene object """
+    
     bl_idname ="scene.remove_nwn_anim"
     bl_label = "Remove NWN animation"
     
@@ -57,6 +62,8 @@ class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
         return wm.invoke_confirm(self, event)
     
 class SCENE_OT_add_nwn_animation(bpy.types.Operator):
+    """ Adds a new Neverwinter Nights animation to the scene object """
+    
     bl_idname ="scene.add_nwn_anim"
     bl_label = "Add a new NWN animation"
     
@@ -96,9 +103,10 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
+    """ Removes the currently selected event in the current animation """
+    
     bl_idname ="scene.remove_nwn_anim_event"
     bl_label = "Remove an event from a NWN animation"
-    
     
     @classmethod
     def poll(cls, context):
@@ -129,6 +137,8 @@ class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
         return wm.invoke_confirm(self, event)
     
 class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
+    """ Adds a new event to the selected animation """
+    
     bl_idname ="scene.add_nwn_anim_event"
     bl_label = "Add a new event to a NWN animation"
 
@@ -167,6 +177,8 @@ class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
         return wm.invoke_props_dialog(self)
 
 class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
+    """ Adjust scene start and end frame to the selected animation """
+    
     bl_idname ="scene.nwn_anim_focus"
     bl_label = "Focus on animation"
     bl_description = "Adjust scene start and end frame to the selected animation"

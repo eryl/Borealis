@@ -19,9 +19,13 @@
 # <pep8 compliant>
 
 '''
-Created on 11 aug 2010
+Module with functions for importing a Neverwinter Nights model to Blender.
 
-@author: erik
+The module contains function which handles different parts of importing
+a Neverwinter Nights mdl model into blender. It depends heavily on custom
+properties for all Neverwinter specific settings.
+
+@author: Erik Ylipää
 '''
 
 import os

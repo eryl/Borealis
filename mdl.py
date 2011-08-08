@@ -20,9 +20,14 @@
 # <pep8 compliant>
 
 '''
-Created on 10 aug 2010
+Contains classes and functions for interfacing with Neverwinter Nights ASCII 
+models.
 
-@author: erik
+The classes are organized to mimic how the nodes are organized in a ascii mdl
+file. The information about node properties are contained in the `basic_props`
+module.
+
+@author: Erik Ylipää
 '''
 
 import copy
@@ -34,8 +39,11 @@ except ValueError:
     import basic_props
     
 TAB_WIDTH = 2
+""" The spaces to use for every level of indentation when outputting data"""
 
 def compare(file1, file2):
+    """ Compares two Neverwinter Nights ascii models """
+    
     print("Comparing file: %s with %s" % (os.path.basename(file1), os.path.basename(file2)))
     mdl1 = Model()
     mdl2 = Model()
@@ -58,13 +66,12 @@ def compare(file1, file2):
         
         
 class Model(object):
-    '''
-    classdocs
-    '''
+    """ The root class for all Neverwinter Nights models.
+    
+            The class is the basic container for the model.
+    """ 
+    
     def __init__(self, name = ""):
-        '''
-        Constructor
-        '''
         self.name = name
         self.supermodel = ""
         self.classification = ""
@@ -74,15 +81,19 @@ class Model(object):
         self.animations = []
     
     def new_geometry_node(self, type, name):
-       return self.geometry.new_node(type, name)
+        """ Creates and returns a new geometry node  """
+        return self.geometry.new_node(type, name)
         
     
     def new_animation(self, name):
+        """ Creates and returns a new empty animation """
         animation = Animation(name, self.name)
         self.animations.append(animation)
         return animation
     
     def from_file(self, filename, ascii=True):
+        """ Loads a model from a ascii mdl file.
+        """
         if ascii:
             try:
                 model_file = open(filename)
@@ -171,19 +182,21 @@ class Model(object):
     
         return out_string
 
-### Geometry classes ### 
-
 class Geometry:
-   
+    """ Basic container class for the models geometry """
     
     def __init__(self, name):
         self.name = name
         self.nodes = []
-        self.node_classes = {"dummy": NodeDummy, "trimesh" : NodeTrimesh,
-                        "danglymesh" : NodeDanglymesh, "skin" : NodeSkin, 
-                        "emitter" : NodeEmitter, "light" : NodeLight}
-    
+        
     def from_file(self, model_data):
+        """ Read the geometry from the list of lists `model_data`.
+        
+                Creates nodes as they are encountered and stops when it reaches
+                a line with the tolen 'endmodelgeom'
+        
+        """
+        
         while model_data:
             current_line = model_data.pop(0)
             
@@ -195,32 +208,16 @@ class Geometry:
                 continue
             
             if current_line[0] == "node":
-                node = None
+                node_type = current_line[1]
                 node_name = current_line[2]
-                
-                if current_line[1] == "dummy":
-                    node = NodeDummy(node_name)
-                    
-                elif current_line[1] == "trimesh":
-                    node = NodeTrimesh(node_name)
-                    
-                elif current_line[1] == "danglymesh":
-                    node = NodeDanglymesh(node_name)
-                    
-                elif current_line[1] == "skin":
-                    node = NodeSkin(node_name)
-                    
-                elif current_line[1] == "light":
-                    node = NodeLight(node_name)
-                elif current_line[1] == "emitter":
-                    node = NodeEmitter(node_name)
+                node = Node(node_name, node_type)
                 
                 node.from_file(model_data)
                 self.nodes.append(node)
     
-    def new_node(self, type, name):
-        node_class = self.node_classes[type]
-        node = node_class(name)
+    def new_node(self, node_type, name):
+        """ Create and return a new geometry node """
+        node = Node(name, node_type)
         self.nodes.append(node)
         return node
     
@@ -236,9 +233,12 @@ class Geometry:
     
     
 class Node:
-    def __init__(self, name):
+    """ The base class for all nodes """
+    
+    def __init__(self, name, type):
         
         self.name = name
+        self.type = type
         props = basic_props.GeometryNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
@@ -299,28 +299,6 @@ class Node:
         
     def __str__(self):
         return "\n".join([line for line in self.output_node()])
-            
-class NodeDummy(Node):
-    type = "dummy"
-
-class NodeTrimesh(Node):
-    type = "trimesh"
-
-class NodeDanglymesh(Node):
-    type = "danglymesh"
-
-class NodeSkin(Node):
-    type = "skin"
-
-class NodeEmitter(Node):
-    type = "emitter"
-
-class NodeLight(Node):
-    type = "light"
-
-
-### Done Geometry classes ###
-
 ### Animation classes ###
 
 class Animation:
@@ -332,13 +310,9 @@ class Animation:
         self.animroot = ""
         self.nodes = []
         self.events = []
-        self.node_classes = {"dummy": AnimationNodeDummy, "trimesh" : AnimationNodeTrimesh,
-                        "danglymesh" : AnimationNodeDanglymesh, "skin" : AnimationNodeSkin, 
-                        "emitter" : AnimationNodeEmitter, "light" : AnimationNodeLight}
     
-    def new_node(self, type, name):
-        node_class = self.node_classes[type]
-        animation_node = node_class(name)
+    def new_node(self, node_type, name):
+        animation_node = AnimationNode(name, node_type)
         self.nodes.append(animation_node)
         return animation_node
 
@@ -369,24 +343,7 @@ class Animation:
             elif current_line[0] == "node":
                 node_type = current_line[1]
                 node_name = current_line[2]
-                node = None
-                
-                if node_type == "dummy":
-                    node = AnimationNodeDummy(node_name)
-                    
-                elif node_type == "trimesh":
-                    node = AnimationNodeTrimesh(node_name)
-                    
-                elif node_type == "danglymesh":
-                    node = AnimationNodeDanglymesh(node_name)
-                    
-                elif node_type == "skin":
-                    node = AnimationNodeSkin(node_name)
-                    
-                elif node_type == "light":
-                    node = AnimationNodeLight(node_name)
-                elif node_type == "emitter":
-                    node = AnimationNodeEmitter(node_name)
+                node = AnimationNode(node_name, node_type)
                 
                 node.from_file(model_data)
                 self.nodes.append(node)
@@ -406,36 +363,16 @@ class Animation:
         return "\n".join([line for line in self.output_animation()])
 
 class AnimationNode(Node):
-    def __init__(self, name):
+    def __init__(self, name, node_type):
         
         self.name = name
-
+        self.type = node_type
         props = basic_props.AnimationNodeProperties.get_node_properties(self.type)
         self.properties = {}
-        
-        
         
         for prop in props:
             self.properties[prop.name] = copy.copy(prop)
    
-class AnimationNodeDummy(AnimationNode):
-    type = "dummy"
-
-class AnimationNodeTrimesh(AnimationNode):
-    type = "trimesh"
-    
-class AnimationNodeDanglymesh(AnimationNode):
-    type = "danglymesh"
-
-class AnimationNodeSkin(AnimationNode):
-    type = "skin"
-
-class AnimationNodeEmitter(AnimationNode):
-    type = "emitter"
-
-class AnimationNodeLight(AnimationNode):
-    type = "light"
-    
 if __name__ == "__main__":
     mdl = Model()
     mdl.from_file("c_werewolf.mdl")

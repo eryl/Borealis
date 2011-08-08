@@ -20,8 +20,12 @@
 '''
 Contains basic properties for handling node properties.
 
+This module contains a set of classes for interfacing between blenders custom 
+properties and the properties used in Neverwinter Nights models. The basic
+information about which nodes has which properties are contained herein.
+
 :Classes:
-`Property`: Base class for a property in a node
+`Property`: Base class for all properties.
 
 
 
@@ -181,11 +185,6 @@ class ColorProperty(FloatVectorProperty):
     data_type = float
     min_value = 0
     max_value = 1
-#    def __init__(self, name, nodes, blender_ignore = False, 
-#                 default_value = 0, min_value = 0, max_value = 1):
-#        self.min_value = min_value
-#        self.max_value = max_value
-#        FloatVectorProperty.__init__(self, name, nodes, blender_ignore, default_value)
 
 class NodeProperties():
     node_types = None
@@ -227,6 +226,8 @@ class NodeProperties():
     
     
 class GeometryNodeProperties(NodeProperties):
+    """ Class for collecting all geometry-node properties
+    """
     props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
                        FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
                        FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
@@ -347,6 +348,9 @@ class GeometryNodeProperties(NodeProperties):
 
                 
 class AnimationNodeProperties(NodeProperties):
+    """
+    Class containing all animation node properties
+    """
     
     props_list = [#general properties
                   StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
