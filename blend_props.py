@@ -24,6 +24,7 @@ Created on 2 aug 2011
 @author: erik
 '''
 import bpy
+
 from . import basic_props
         
 def register():

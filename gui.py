@@ -23,6 +23,7 @@ Created on 11 aug 2010
 @author: erik
 '''
 import bpy
+
 from . import basic_props
 
 class OBJECT_PT_nwn_colors(bpy.types.Panel):

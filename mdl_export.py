@@ -30,9 +30,11 @@ GUI.
 '''
 
 import os
+
 import bpy
 from bpy.props import CollectionProperty, StringProperty, BoolProperty
 from bpy_extras.io_utils import ExportHelper
+
 from . import basic_props
 from . import mdl
     
@@ -200,7 +202,6 @@ def export_mesh(obj, node):
     vertices = [vert.co[:] for vert in mesh.vertices]
     node['verts'] = vertices
     
-    smooth_group = 1
     faces = []
     uv_verts = []
     uv_verts_dict = {}
@@ -208,7 +209,10 @@ def export_mesh(obj, node):
     uv_verts
     for i, face in enumerate(mesh.faces):
         v1, v2, v3 = face.vertices[:]
-        
+        smooth_group = 1
+        if mesh.materials:
+            if "smooth" in mesh.materials[face.material_index].name.lower():
+                smooth_group = face.material_index + 1
         if uv_faces:
             uv_co1, uv_co2, uv_co3 = uv_faces[i].uv1, uv_faces[i].uv2, uv_faces[i].uv3
             

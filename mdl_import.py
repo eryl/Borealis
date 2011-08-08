@@ -24,8 +24,9 @@ Created on 11 aug 2010
 @author: erik
 '''
 
-import bpy
 import os
+
+import bpy
 
 from . import mdl
 
@@ -187,6 +188,7 @@ def import_geometry(mdl_object, filename, context, objects):
                 continue
             ob.nwn_props.node_properties[prop.name] = prop.value
 
+
 def setup_texture(mesh, node, filename):
     #if the node has no texture vertices, do nothing
     if not node.get_prop_value("tverts"):
@@ -231,6 +233,20 @@ def setup_texture(mesh, node, filename):
         uv_face.uv1 = texture_verts[nwn_uv_face[0]]
         uv_face.uv2 = texture_verts[nwn_uv_face[1]]
         uv_face.uv3 = texture_verts[nwn_uv_face[2]]
+        
+    #We also set up the smoothing groups as blender materials, since blender
+    #doesn't really have the notion of smoothing groups in 2.5
+    smoothing_indices = [face[3] for face in node.get_prop_value("faces")]
+    faces = mesh.faces
+    for face, smoothing_index in enumerate(smoothing_indices):
+        mat_name = "Smooth_" + str(smoothing_index)
+        if not mat_name in mesh.materials:
+            if not mat_name in bpy.data.materials:
+                bpy.data.materials.new(name = mat_name)
+            mesh.materials.append(bpy.data.materials[mat_name])
+            
+        faces[face].material_index = mesh.materials.keys().index(mat_name)
+    
 
 def import_animations(mdl_object, context, objects):
     """
