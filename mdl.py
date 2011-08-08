@@ -291,14 +291,20 @@ class Node:
         return self.properties[property].value
     
     def output_node(self):
+        
+        # We get the properties list from the GeometryNodeProperties to
+        # produce the output in the correct order
+        props = basic_props.GeometryNodeProperties.get_node_properties(self.type)
         yield "node %s %s" % (self.type, self.name)
-        for property in self.properties.values():
-            if property.value_written:
-                yield str(property)
+        for property in props:
+            if property.name in self.properties:
+                if self.properties[property.name].value_written:
+                    yield str(self.properties[property.name])
         yield "endnode"
         
     def __str__(self):
         return "\n".join([line for line in self.output_node()])
+    
 ### Animation classes ###
 
 class Animation:
