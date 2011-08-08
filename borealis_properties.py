@@ -1,3 +1,23 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+# <pep8 compliant>
+
 '''
 Created on 2 aug 2011
 
@@ -21,6 +41,8 @@ def register():
     bpy.types.Lamp.nwn_node_type = bpy.props.EnumProperty(items = [("light","light","light")],
                                    name = "Node Type",
                                    description = "The NWN Node type of this object")
+    
+
 
 def unregister():
     pass
@@ -54,7 +76,7 @@ class BorealisSettings(bpy.types.PropertyGroup):
         #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
         for prop in borealis_basic_types.GeometryNodeProperties.get_properties():
             # one case for each of the different property types
-            if  prop.has_blender_eq:
+            if  prop.blender_ignore:
                 continue
             
             ##The order of the cases are important since some properties are subtypes of other
@@ -160,7 +182,10 @@ class AnimationProperties(bpy.types.PropertyGroup):
     animations = bpy.props.CollectionProperty(type=Animation)
     animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")
      
-
+class WalkmeshColor(bpy.types.PropertyGroup):
+    color = bpy.props.FloatVectorProperty(name = "Color", subtype = 'COLOR')
+    type = bpy.props.StringProperty(name = "Surface type")
+    
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
                                                      ("character","Character","character"),
@@ -172,7 +197,7 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
     supermodel = bpy.props.StringProperty(name = "Supermodel")
     animationscale = bpy.props.FloatProperty(name = "Animation Scale")
     root_object_name = bpy.props.StringProperty(name = "Root object name")
+    animation_props = bpy.props.PointerProperty(type = AnimationProperties)
+    walkmesh_colors = bpy.props.CollectionProperty(type=WalkmeshColor)
+    
         
-    @classmethod
-    def register(cls):
-        cls.animation_props = bpy.props.PointerProperty(type = AnimationProperties)

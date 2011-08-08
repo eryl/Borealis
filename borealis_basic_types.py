@@ -1,27 +1,51 @@
-'''
-Created on 24 jul 2011
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
 
-@author: erik
+# <pep8 compliant>
+'''
+Contains basic properties for handling node properties.
+
+:Classes:
+`Property`: Base class for a property in a node
+
+
+
+@author: Erik Ylipää
 '''
 
 class Property:
     nodes = []
     name = ""
-    has_blender_eq = False
+    blender_ignore = False
     value = None
     data_type = str
     value_written = False
     default_value = None
-    
+    show_in_gui = True
     TAB_SPACE = 2
     
-    def __init__(self, name, nodes, has_blender_eq = False, default_value = ""):
+    def __init__(self, name, nodes, blender_ignore = False, default_value = "", show_in_gui = True):
         
         self.name = name
         self.nodes = nodes
-        self.has_blender_eq = has_blender_eq
+        self.blender_ignore = blender_ignore
         self.default_value = default_value
-    
+        self.show_in_gui
     
     def read_value(self, current_line, model_data):
         try:
@@ -43,11 +67,11 @@ class Property:
 class NumberProperty(Property):
     min_value = None
     max_value = None
-    def __init__(self, name, nodes, has_blender_eq = False, 
+    def __init__(self, name, nodes, blender_ignore = False, 
                  default_value = 0, min_value = None, max_value = None):
         self.min_value = min_value
         self.max_value = max_value
-        Property.__init__(self, name, nodes, has_blender_eq, default_value)
+        Property.__init__(self, name, nodes, blender_ignore, default_value)
 
 #vector properties are properties that have many values on one row
 class VectorProperty(Property):
@@ -118,9 +142,9 @@ class BooleanProperty(Property):
 
 class EnumProperty(Property):
     enums = []
-    def __init__(self, name, nodes, enums, has_blender_eq = False):
+    def __init__(self, name, nodes, enums, blender_ignore = False):
         self.enums = enums
-        Property.__init__(self, name, nodes, has_blender_eq);
+        Property.__init__(self, name, nodes, blender_ignore);
 
 
 class IntProperty(NumberProperty):
@@ -157,11 +181,11 @@ class ColorProperty(FloatVectorProperty):
     data_type = float
     min_value = 0
     max_value = 1
-#    def __init__(self, name, nodes, has_blender_eq = False, 
+#    def __init__(self, name, nodes, blender_ignore = False, 
 #                 default_value = 0, min_value = 0, max_value = 1):
 #        self.min_value = min_value
 #        self.max_value = max_value
-#        FloatVectorProperty.__init__(self, name, nodes, has_blender_eq, default_value)
+#        FloatVectorProperty.__init__(self, name, nodes, blender_ignore, default_value)
 
 class NodeProperties():
     node_types = None
@@ -203,9 +227,9 @@ class NodeProperties():
     
     
 class GeometryNodeProperties(NodeProperties):
-    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], has_blender_eq=True),
-                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], has_blender_eq=True),
-                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], has_blender_eq=True),
+    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
+                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
+                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
                 
                     ### mesh ###
                     ColorProperty("ambient", nodes = ["trimesh", "danglymesh", "skin"]),
@@ -213,10 +237,10 @@ class GeometryNodeProperties(NodeProperties):
                     ColorProperty("specular", nodes = ["trimesh", "danglymesh", "skin"]),
                     IntProperty("shininess", nodes = ["trimesh", "danglymesh", "skin"]),
                     BooleanProperty("shadow", nodes = ["trimesh", "danglymesh", "skin"]),
-                    StringProperty("bitmap", nodes = ["trimesh", "danglymesh", "skin"], has_blender_eq=True),
-                    FloatMatrixProperty("verts", nodes = ["trimesh", "danglymesh", "skin"], has_blender_eq=True),
-                    FloatMatrixProperty("tverts", nodes = ["trimesh", "danglymesh", "skin"], has_blender_eq=True),
-                    IntMatrixProperty("faces", nodes = ["trimesh", "danglymesh", "skin"], has_blender_eq=True),
+                    StringProperty("bitmap", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
+                    FloatMatrixProperty("verts", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
+                    FloatMatrixProperty("tverts", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
+                    IntMatrixProperty("faces", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
                     FloatProperty("alpha", nodes = ["trimesh", "danglymesh", "skin"]),
                     FloatProperty("scale", nodes = ["trimesh", "danglymesh", "skin"]),
                     ColorProperty("selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"]),
@@ -235,13 +259,13 @@ class GeometryNodeProperties(NodeProperties):
                     FloatProperty("displacement", nodes = ["danglymesh"]),
                     IntProperty("period", nodes = ["danglymesh"]),
                     IntProperty("tightness", nodes = ["danglymesh"]),
-                    IntMatrixProperty("constraints", nodes = ["danglymesh"], has_blender_eq=True),
+                    IntMatrixProperty("constraints", nodes = ["danglymesh"], blender_ignore=True),
                     
                     ### skin ###
-                    MatrixProperty("weights", nodes = ["skin"], has_blender_eq=True),
+                    MatrixProperty("weights", nodes = ["skin"], blender_ignore=True),
                     
                     ### aabb ### 
-                    MatrixProperty("aabb", nodes = ["aabb"], has_blender_eq=True),
+                    MatrixProperty("aabb", nodes = ["aabb"], blender_ignore=True),
                     
                     ### Emitter properties ###
                     ColorProperty('colorstart', nodes = ["emitter"]),
@@ -307,9 +331,9 @@ class GeometryNodeProperties(NodeProperties):
                     
                     
                     ### Light properties ###
-                    ColorProperty('color', nodes = ["light"], has_blender_eq=True),        #The color of the light source.
+                    ColorProperty('color', nodes = ["light"], blender_ignore=True),        #The color of the light source.
                     FloatProperty('multiplier', nodes = ["light"]), #Unknown
-                    FloatProperty('radius', nodes = ["light"], has_blender_eq=True),        #Probably the range of the light.
+                    FloatProperty('radius', nodes = ["light"], blender_ignore=True),        #Probably the range of the light.
                     BooleanProperty('ambientonly', nodes = ["light"]),        #This controls if the light is only an ambient lightsource or if it is directional as well.
                     BooleanProperty('isdynamic', nodes = ["light"]),       #Unknown.
                     BooleanProperty('affectdynamic', nodes = ["light"]),        #Unknown.
@@ -325,7 +349,7 @@ class GeometryNodeProperties(NodeProperties):
 class AnimationNodeProperties(NodeProperties):
     
     props_list = [#general properties
-                  StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], has_blender_eq=True),
+                  StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
                   FloatMatrixProperty("orientationkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
                   FloatMatrixProperty("positionkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
                   

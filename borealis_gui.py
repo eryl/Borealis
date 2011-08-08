@@ -1,3 +1,22 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+# <pep8 compliant>
 '''
 Created on 11 aug 2010
 
@@ -5,8 +24,23 @@ Created on 11 aug 2010
 '''
 import bpy
 
-class OBJECT_PT_nwn_basic_settings(bpy.types.Panel):
-    bl_idname = "OBJECT_PT_nwn_basic_settings"
+class OBJECT_PT_nwn_colors(bpy.types.Panel):
+    bl_idname = "SCENE_PT_nwn_basic_settings"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "NWN Walkmesh Colors"
+    bl_context = "vertexpaint"
+    def draw(self, context):
+        layout = self.layout
+        for color in context.scene.nwn_props.walkmesh_colors:
+            row = layout.row()
+            col = row.prop(color, "color")
+            col.active = False
+            row.label(text = color.type)
+            
+
+class SCENE_PT_nwn_basic_settings(bpy.types.Panel):
+    bl_idname = "SCENE_PT_nwn_basic_settings"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_label = "NWN Basic Model Settings"
@@ -53,8 +87,8 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             index = anim_props.animation_index
             animation = anim_props.animations[index]
             
-            box.row().operator("scene.nwn_anim_focus")
             
+            box.row().operator("scene.nwn_anim_focus")
             anim_row = box.row()
             anim_row.prop(animation, "name")
             
@@ -88,35 +122,28 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
                 row.prop(event, "time")
   
             
-class BorealisTools(bpy.types.Panel):
+class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
     bl_idname = "OBJECT_PT_nwn_tools"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
-    bl_label = "NWN Model tools"
+    bl_label = "NWN Node tools"
     bl_context = "object"
 
     @classmethod
     def poll(cls, context):
-        return (context.object is not None)
+        if context.object is not None:
+            if obj.type.upper() in ['LAMP','MESH','EMPTY']:
+                return True
+            
+        return False
      
     def draw(self, context):
         layout = self.layout
 
         obj = context.object
         
-        #only display nwn modeling tools if the selected object is relevant in nwn
-        if obj.type.upper() not in ['LAMP','MESH','EMPTY']:
-            row = layout.row()
-            row.label(text="Not compatible object")
-            row = layout.row()
-            row.label(text="Select a lamp, mesh or empty object")
-            
-            return
-        
-             
-        
         row = layout.row()
-        row.prop(obj.nwn_props, "is_nwn_object", text="Toggle NWN object")
+        row.prop(obj.nwn_props, "is_nwn_object", text="Aurora Object")
         
         if obj.nwn_props.is_nwn_object:
             ### node settings ###
@@ -139,14 +166,11 @@ class BorealisTools(bpy.types.Panel):
             if node_type == "danglymesh":
                 box.label(text = "Dangly Vertex Group:")
                 box.prop_search(obj.nwn_props, "danglymesh_vertexgroup" ,obj, "vertex_groups", text = "")
-            elif node_type == "skin":
-                box.template_list(obj.nwn_props, "skin_vertexgroups", obj.nwn_props, "skin_vg_index")
-
             
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
             col_flow = box.column_flow(columns=2)
             for prop in borealis_basic_types.GeometryNodeProperties.get_node_properties(node_type):
-                if prop in bpy.types.BorealisNodeProps.properties:
+                if prop in bpy.types.BorealisNodeProps.properties and prop.show_in_gui:
                     col_flow.prop(obj.nwn_props.node_properties, prop.name)
             
