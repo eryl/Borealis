@@ -23,6 +23,7 @@ Created on 11 aug 2010
 @author: erik
 '''
 import bpy
+from . import basic_props
 
 class OBJECT_PT_nwn_colors(bpy.types.Panel):
     bl_idname = "SCENE_PT_nwn_basic_settings"
@@ -161,7 +162,6 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
                 box.prop(obj.data, "nwn_node_type")
                 node_type = obj.data.nwn_node_type
             
-            from . import borealis_basic_types
             
             if node_type == "danglymesh":
                 box.label(text = "Dangly Vertex Group:")
@@ -170,7 +170,7 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
             col_flow = box.column_flow(columns=2)
-            for prop in borealis_basic_types.GeometryNodeProperties.get_node_properties(node_type):
+            for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
                 if prop in bpy.types.BorealisNodeProps.properties and prop.show_in_gui:
                     col_flow.prop(obj.nwn_props.node_properties, prop.name)
             

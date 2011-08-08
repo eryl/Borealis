@@ -24,10 +24,18 @@ Created on 10 aug 2010
 
 @author: erik
 '''
+
+import copy
+import os
+        
+try:
+    from . import basic_props
+except ValueError:
+    import basic_props
+    
 TAB_WIDTH = 2
 
 def compare(file1, file2):
-    import os
     print("Comparing file: %s with %s" % (os.path.basename(file1), os.path.basename(file2)))
     mdl1 = Model()
     mdl2 = Model()
@@ -231,14 +239,8 @@ class Node:
     def __init__(self, name):
         
         self.name = name
-        try:
-            from . import borealis_basic_types
-        except ValueError:
-            import borealis_basic_types
-        props = borealis_basic_types.GeometryNodeProperties.get_node_properties(self.type)
+        props = basic_props.GeometryNodeProperties.get_node_properties(self.type)
         self.properties = {}
-        
-        import copy
         
         for prop in props:
             self.properties[prop.name] = copy.copy(prop)
@@ -407,15 +409,11 @@ class AnimationNode(Node):
     def __init__(self, name):
         
         self.name = name
-        
-        try:
-            from . import borealis_basic_types
-        except ValueError:
-            import borealis_basic_types
-        props = borealis_basic_types.AnimationNodeProperties.get_node_properties(self.type)
+
+        props = basic_props.AnimationNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
-        import copy
+        
         
         for prop in props:
             self.properties[prop.name] = copy.copy(prop)

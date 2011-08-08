@@ -28,12 +28,14 @@ import os
 import bpy
 from bpy.props import CollectionProperty, StringProperty, BoolProperty
 from bpy_extras.io_utils import ExportHelper
-
+from . import basic_props
+from . import mdl
+    
 
 class BorealisExport(bpy.types.Operator, ExportHelper):
     '''Export a single object as a stanford PLY with normals, colours and texture coordinates.'''
     bl_idname = "export_mesh.nwn_mdl"
-    bl_label = "Export NWN Mdl"
+    bl_label = "Export NWN mdl"
 
 
     filepath = bpy.props.StringProperty(name="File Path",
@@ -60,7 +62,6 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
         
         return export_nwn_mdl(context, **self.as_keywords(ignore=("check_existing", "filter_glob")))
 
-from . import borealis_mdl
         
 
 def export_nwn_mdl(context, **kwargs):
@@ -78,46 +79,44 @@ def export_nwn_mdl(context, **kwargs):
     if not root_object:
         return {'CANCELLED'}
     
-    mdl = borealis_mdl.Model(model_name)
-    mdl.classification = scene_props.classification
-    mdl.supermodel = scene_props.supermodel
-    mdl.setanimationscale =  scene_props.animationscale
+    mdl_object = mdl.Model(model_name)
+    mdl_object.classification = scene_props.classification
+    mdl_object.supermodel = scene_props.supermodel
+    mdl_object.setanimationscale =  scene_props.animationscale
     
     #this will act as an accumulator, containing the objects which has been exported
     exported_objects = []
-    export_geometry(mdl, root_object, exported_objects)
+    export_geometry(mdl_object, root_object, exported_objects)
     
     if kwargs['export_animations']:
-        export_animations(context.scene, mdl, root_object, exported_objects)
+        export_animations(context.scene, mdl_object, root_object, exported_objects)
     
 #    if os.path.exists(kwargs['filepath']):
 #        print("Path exists")
 #    else:
     file = open(kwargs['filepath'], 'w')
-    file.write(str(mdl))
+    file.write(str(mdl_object))
     file.close()
     
     return {'FINISHED'}
 
-def export_geometry(mdl, obj, exported_objects):
-    node = mdl.new_geometry_node("dummy", obj.name)
+def export_geometry(mdl_object, obj, exported_objects):
+    node = mdl_object.new_geometry_node("dummy", obj.name)
     node['parent'] = "NULL"
     exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name, exported_objects)
+        export_node(mdl_object, child, obj.name, exported_objects)
     
         
-def export_node(mdl, obj, parent, exported_objects):
+def export_node(mdl_object, obj, parent, exported_objects):
     
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
         node_type = obj.nwn_props.nwn_node_type
         
-    node = mdl.new_geometry_node(node_type, obj.name)
+    node = mdl_object.new_geometry_node(node_type, obj.name)
     node['parent'] = parent
-    
-    from . import borealis_basic_types
     
     w, x, y, z = obj.rotation_axis_angle
     orientation = [x, y, z, w] 
@@ -125,9 +124,9 @@ def export_node(mdl, obj, parent, exported_objects):
     
     node['position'] = obj.location
     
-    for prop in borealis_basic_types.GeometryNodeProperties.get_node_properties(node_type):
+    for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
         #only export the properties which are set in the properties group
-        if prop.name in obj.nwn_props.node_properties and not prop.has_blender_eq:
+        if prop.name in obj.nwn_props.node_properties and not prop.blender_ignore:
             node[prop.name] = eval("obj.nwn_props.node_properties." + prop.name)
 
     if node_type in ["trimesh", "skin", "danglymesh"]:
@@ -135,7 +134,7 @@ def export_node(mdl, obj, parent, exported_objects):
 
     exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl, child, obj.name, exported_objects)
+        export_node(mdl_object, child, obj.name, exported_objects)
 
 def export_mesh(obj, node):
     mesh = obj.data
@@ -206,7 +205,6 @@ def export_mesh(obj, node):
     if image:
         #use the filename for the texture as primary name
         #fall back on the name of the image 
-        import os.path
         if os.path.exists(image.filepath):
             image_filename = os.path.basename(image.filepath)
             node['bitmap'], ext = os.path.splitext(image_filename)
@@ -263,7 +261,7 @@ def export_mesh(obj, node):
         node["weights"] = weights
         
 
-def export_animations(scene, mdl,root_object, exported_objects):
+def export_animations(scene, mdl_object,root_object, exported_objects):
     animations = scene.nwn_props.animation_props.animations
     
     if not animations:
@@ -272,11 +270,11 @@ def export_animations(scene, mdl,root_object, exported_objects):
     animation_data = build_animation_data(exported_objects, animations)
     
     for animation in animations:
-        export_animation(animation_data[animation.name], scene, animation, mdl, root_object)
+        export_animation(animation_data[animation.name], scene, animation, mdl_object, root_object)
 
-def export_animation(animation_data, scene, animation, mdl, root_object):
+def export_animation(animation_data, scene, animation, mdl_object, root_object):
     fps = scene.render.fps
-    nwn_anim = mdl.new_animation(animation.name)
+    nwn_anim = mdl_object.new_animation(animation.name)
     nwn_anim.animroot = root_object.name 
     
     start_frame = animation.start_frame
@@ -292,9 +290,9 @@ def export_animation(animation_data, scene, animation, mdl, root_object):
     
     
     for child in root_object.children:
-        export_animation_node(fps, animation_data, animation, nwn_anim, mdl, child, root_object.name)
+        export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, root_object.name)
         
-def export_animation_node(fps, animation_data, animation, nwn_anim, mdl, obj, parent):
+def export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, obj, parent):
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
@@ -315,7 +313,7 @@ def export_animation_node(fps, animation_data, animation, nwn_anim, mdl, obj, pa
             node['orientationkey'] = orientationkey
             
     for child in obj.children:
-        export_animation_node(fps, animation_data, animation, nwn_anim, mdl, child, obj.name)
+        export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, obj.name)
     
 def build_animation_data(objects, animations):
     """

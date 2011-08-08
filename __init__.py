@@ -34,6 +34,11 @@ import bpy
 from bpy.props import StringProperty, CollectionProperty
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 import os
+from . import blend_props
+from . import gui
+from . import operators
+from . import mdl_import
+from . import mdl_export
 
 class BorealisImport(bpy.types.Operator, ImportHelper):
     '''
@@ -54,51 +59,35 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
     directory = StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
-        from . import borealis_import
         
         paths = [os.path.join(self.directory, name.name) for name in self.files]
         if not paths:
             paths.append(self.filepath)
         
         for path in paths:
-            borealis_import.import_mdl(path, context)
+            mdl_import.import_mdl(path, context)
             
         return {'FINISHED'}
 
 def register():
-    from . import borealis_properties
-    from . import borealis_gui
-    from . import borealis_operators
-    from . import borealis_import
-    from . import borealis_export
-    
     bpy.utils.register_module(__name__)
-    
-    borealis_properties.register()
-    
+    blend_props.register()
     
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
  
 def unregister():
-    from . import borealis_properties
-    from . import borealis_gui
-    from . import borealis_operators
-    from . import borealis_import
-    from . import borealis_export
     bpy.utils.unregister_module(__name__)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
  
 def menu_import(self, context):
-    from . import borealis_import
     self.layout.operator(BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
 
 def menu_export(self, context):
     import os
-    from . import borealis_export
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".mdl"
-    self.layout.operator(borealis_export.BorealisExport.bl_idname, text="Nwn Mdl(.mdl)").filepath = default_path
+    self.layout.operator(mdl_export.BorealisExport.bl_idname, text="Nwn Mdl(.mdl)").filepath = default_path
 
 if __name__ == "__main__":
     register()
