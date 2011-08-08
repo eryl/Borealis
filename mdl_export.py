@@ -19,9 +19,14 @@
 # <pep8 compliant>
 
 '''
-Created on 11 aug 2010
+Module with functions for exporting Neverwinter Nights models from Blender.
 
-@author: erik
+The module contains a number of functions for exporting a blender model to a
+model usable in the game Neverwinter Nights from Bioware. The export works in
+concert with the other modules in this package, and especially the borealis 
+GUI.
+
+@author: Erik Ylipää
 '''
 
 import os
@@ -33,10 +38,14 @@ from . import mdl
     
 
 class BorealisExport(bpy.types.Operator, ExportHelper):
-    '''Export a single object as a stanford PLY with normals, colours and texture coordinates.'''
+    """ Exports a Blender Object hierarchy to a Neverwinter Nights mdl model.
+    
+            This class is the Blender Operator which initiates the export.
+        
+    """
+    
     bl_idname = "export_mesh.nwn_mdl"
     bl_label = "Export NWN mdl"
-
 
     filepath = bpy.props.StringProperty(name="File Path",
                           description="File path used for exporting "
@@ -46,8 +55,18 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
     filename_ext = ".mdl"
     filter_glob = StringProperty(default="*.mdl", options={'HIDDEN'})
 
-    use_root_name = BoolProperty(name="Use Root Object Name", description="Use the name of the root object as the model name and filename like Neverwinter Nights expects, if false the filename will be used as the model name in the model file", default=True)
-    export_animations = BoolProperty(name="Export Animations", description="Toggle whether animations should be exported or not", default=True) 
+    use_root_name = BoolProperty(name="Use Root Object Name", 
+                                 description=
+                                 ("Use the name of the root object" +  
+                                 "as the model name and filename like " +
+                                 "Neverwinter Nights expects, if false the " +
+                                 "filename will be used as the model name in" +
+                                 " the model file" )
+                                 ,default=True)
+    do_export_animations = BoolProperty(name="Export Animations", 
+                                     description="Toggle whether animations "
+                                     +"should be exported or not"
+                                     , default=True) 
     
     
     @classmethod
@@ -60,15 +79,42 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
         
-        return export_nwn_mdl(context, **self.as_keywords(ignore=("check_existing", "filter_glob")))
+        return export_nwn_mdl(context, 
+                              **self.as_keywords(ignore=("check_existing"
+                                                         , "filter_glob")))
 
         
 
-def export_nwn_mdl(context, **kwargs):
+def export_nwn_mdl(context, use_root_name = True, 
+                   do_export_animations = True, **kwargs):
+    """ Exports an Object tree into a nwn mdl.
+    
+            Initiates the export of the Blender Object tree into a 
+            Neverwinter Nights mdl Model.
+            
+            For the export to work, the custom property on the current Scene
+            object should have the property scene.nwn_props.root_object_name
+            set to a valid name.
+            
+            The objects which should be exported also has to have the 
+            is_nwn_object flag set to true, otherwise they will be ignored,
+            as well as any children they might have.
+            
+            Arguments:
+                context - the current context, should be passed from the 
+                    Operator doing the export.
+
+            Keyword arguments:
+                use_root_name - The model will be named according to the name
+                    of the Object set as root object of the mdl
+                export_animations - Whether to export animations or not. True
+                    to export animations, False to only export geometry
+    """
+    
     scene_props = context.scene.nwn_props
     root_object = context.scene.objects[scene_props.root_object_name]
     
-    if kwargs['use_root_name']:
+    if use_root_name:
         model_name = root_object.name
     else:
         filepath = kwargs['filepath']
@@ -84,11 +130,11 @@ def export_nwn_mdl(context, **kwargs):
     mdl_object.supermodel = scene_props.supermodel
     mdl_object.setanimationscale =  scene_props.animationscale
     
-    #this will act as an accumulator, containing the objects which has been exported
+    #this will act as an accumulator, containing the exported objects
     exported_objects = []
     export_geometry(mdl_object, root_object, exported_objects)
     
-    if kwargs['export_animations']:
+    if do_export_animations:
         export_animations(context.scene, mdl_object, root_object, exported_objects)
     
 #    if os.path.exists(kwargs['filepath']):
@@ -101,15 +147,19 @@ def export_nwn_mdl(context, **kwargs):
     return {'FINISHED'}
 
 def export_geometry(mdl_object, obj, exported_objects):
+    """ Export the root Object as the mdl root node """
     node = mdl_object.new_geometry_node("dummy", obj.name)
     node['parent'] = "NULL"
     exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl_object, child, obj.name, exported_objects)
+        if child.nwn_props.is_nwn_object:
+            export_node(mdl_object, child, obj.name, exported_objects)
     
         
 def export_node(mdl_object, obj, parent, exported_objects):
-    
+    """ Export an object as a NWN geometry node.
+        
+    """
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
@@ -134,9 +184,11 @@ def export_node(mdl_object, obj, parent, exported_objects):
 
     exported_objects.append(obj)
     for child in obj.children:
-        export_node(mdl_object, child, obj.name, exported_objects)
+        if child.nwn_props.is_nwn_object:
+            export_node(mdl_object, child, obj.name, exported_objects)
 
 def export_mesh(obj, node):
+    """ Exports the mesh data of a Mesh object to a nwn node """
     mesh = obj.data
     uv_faces = None
     image = None
@@ -144,10 +196,6 @@ def export_mesh(obj, node):
     if mesh.uv_textures:
         uv_faces = mesh.uv_textures.active.data
         image = uv_faces[0].image
-    
-    #somehow we have to accomodate for the difference in how blender and nwn
-    #handles the uv-coords. In nwn every uv vertice corresponds to a geometry vertice
-    #in blender, every face has it's own uv-vertices
     
     vertices = [vert.co[:] for vert in mesh.vertices]
     node['verts'] = vertices
@@ -262,6 +310,7 @@ def export_mesh(obj, node):
         
 
 def export_animations(scene, mdl_object,root_object, exported_objects):
+    """ Exports the Blender animations of the model """
     animations = scene.nwn_props.animation_props.animations
     
     if not animations:
@@ -273,13 +322,13 @@ def export_animations(scene, mdl_object,root_object, exported_objects):
         export_animation(animation_data[animation.name], scene, animation, mdl_object, root_object)
 
 def export_animation(animation_data, scene, animation, mdl_object, root_object):
+    """ Exports a single animation from Blender to the nwn mdl_object """
+    
     fps = scene.render.fps
     nwn_anim = mdl_object.new_animation(animation.name)
     nwn_anim.animroot = root_object.name 
-    
     start_frame = animation.start_frame
     end_frame = animation.end_frame
-    
     nwn_anim.length = (end_frame - start_frame) / fps
     nwn_anim.transtime = animation.transtime
     
@@ -288,11 +337,15 @@ def export_animation(animation_data, scene, animation, mdl_object, root_object):
     root_node = nwn_anim.new_node("dummy", root_object.name)
     root_node.parent = 'NULL'
     
-    
     for child in root_object.children:
-        export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, root_object.name)
+        if child.nwn_props.is_nwn_object:
+            export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, root_object.name)
         
 def export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, obj, parent):
+    """ Exports the animations of a Blender Object as a nwn animation node.
+    
+    """
+    
     if obj.type in ['MESH', 'LIGHT']:
         node_type = obj.data.nwn_node_type
     else:
@@ -313,26 +366,31 @@ def export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, 
             node['orientationkey'] = orientationkey
             
     for child in obj.children:
-        export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, obj.name)
+        if child.nwn_props.is_nwn_object:
+            export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, obj.name)
     
 def build_animation_data(objects, animations):
-    """
-    We create a complete dictionary of all objects and their animation data for simplified
-    access later on
-    """
-    #We build a tree with all the animation n
+    """ Creates a dictionary with the blender animation data suitable for nwn.
     
-    animation_list = [{"name" : animation.name, 
-                       "start_frame" : animation.start_frame,
-                       "end_frame" : animation.end_frame,
-                       "nodes" : {}} for animation in animations]
+           The function builds a nested dictionary with a layout similar to how
+           animations are describe by the neverwinter nights ascii mdl.
+    """
     
+    #The animation_list is a list of animations represented as dictionaries
+    animation_list = [{"name": animation.name, 
+                       "start_frame": animation.start_frame,
+                       "end_frame": animation.end_frame,
+                       "nodes": {}} for animation in animations]
+    
+    #We sort the list in the order of the animations start frame
     animation_list.sort(key=lambda x: x["start_frame"])
     
-    #we build a mighty dictionary where the keyframe points are gathered depending on 
-    #time, and not seperate channels for every object
+    #Times is a dictionary where the keys are different times. The values in
+    #turn are also dictionaries for all keyframes which occurs at the time
     times = {}
     
+    # We go through all objects animation data and extract all their keyframes
+    # the keyframes are inserted into the times dict at the time they occur.
     for object in objects:
         if not object.animation_data:
             continue
@@ -356,35 +414,45 @@ def build_animation_data(objects, animations):
                     attribute_name = "z"
             
             for point in fcurve.keyframe_points:
-                if point.co[0] not in times:
-                    times[point.co[0]] = {}
-                if object.name not in times[point.co[0]]:
-                    times[point.co[0]][object.name] = {}
-                if fcurve.data_path not in times[point.co[0]][object.name]:
-                    times[point.co[0]][object.name][fcurve.data_path] = {}
-                times[point.co[0]][object.name][fcurve.data_path][attribute_name] = point.co[1]
+                frame, value = point.co
+                if frame not in times:
+                    times[frame] = {}
+                if object.name not in times[frame]:
+                    times[frame][object.name] = {}
+                if fcurve.data_path not in times[frame][object.name]:
+                    times[frame][object.name][fcurve.data_path] = {}
+                times[frame][object.name][fcurve.data_path][attribute_name] = value
     
+    #We now extract the data as a list of tuples, and sort them according to
+    #the time they occur
     times_list = sorted(times.items())
-    current_time = times_list.pop(0)
+    
+    # We go through all the times in order, starting with the first and insert
+    # them into the right animation. The animation_list has to be sorted
+    # for this to work, which is done at the top
+    current_frame, key_nodes = times_list.pop(0)
+    done = False
     for animation in animation_list:
-        while(current_time[0] <= animation['end_frame']):    
-            #if we find a time which has already 'passed', it isn't part of any animation
-            #and is therefore discarded        
-            if current_time[0] >= animation['start_frame']:
-                for node, data_paths in current_time[1].items():
+        if done:
+            break
+        while(current_frame <= animation['end_frame']):    
+            #The animation has to have a keyframe after the start frame,
+            #otherwise it won't get inserted into this animation
+            if current_frame >= animation['start_frame']:
+                for node, data_paths in key_nodes.items():
                     if node not in animation['nodes']:
                         animation['nodes'][node] = {} 
                     for path, attributes in data_paths.items():
                         if path not in animation['nodes'][node]:
                             animation['nodes'][node][path] = {}
-                        animation['nodes'][node][path][current_time[0]] = attributes
-            
-            if not times_list:
-                break;
-            current_time = times_list.pop(0)        
+                        animation['nodes'][node][path][current_frame] = attributes
+            if times_list:
+                current_frame, key_nodes = times_list.pop(0)
+            else:
+                done = True
                 
-        
+                
+    
     animation_dict = dict(zip([animation['name'] for animation in animation_list],
                                animation_list))
-    
     return animation_dict 
