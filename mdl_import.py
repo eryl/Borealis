@@ -41,6 +41,10 @@ def import_mdl(filename, context):
     
     objects = []
     
+    #Some of the import stuff assumes we're in object-mode, and we set it
+    #accordingly
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
     import_geometry(mdl_object, filename, context, objects)
     import_animations(mdl_object, context, objects)
     
@@ -161,12 +165,12 @@ def import_geometry(mdl_object, filename, context, objects):
         #this has to be done after the object has been linked to the scene
         if node.type == "skin":
             bpy.ops.object.select_name(name=ob.name)
-            bpy.ops.object.mode_set(mode = 'EDIT')
+            bpy.ops.object.mode_set(mode='EDIT')
             for modifier in ob.modifiers:
                 if modifier.type == 'HOOK':
                     
                     bpy.ops.object.hook_reset(modifier = modifier.name)
-            bpy.ops.object.mode_set(mode = 'OBJECT')
+            bpy.ops.object.mode_set(mode='OBJECT')
         
         ### set up properties for the object ###
         ## We're making the assumption that the custom properties from BorealisTools are
