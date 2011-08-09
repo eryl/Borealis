@@ -230,10 +230,10 @@ class AABBTree(MatrixProperty):
         """
         Updates the value of the matrix. value must be a matrix, a sequence of sequences
         """
-        print("AABB update value Not implemented")
+        self.value = value
+        self.value_written = True
     
     def output_values(self):
-        print("AABB output value Not implemented")
         root_node = self.value
         x1, y1, z1 = root_node["co1"]
         x2, y2, z2 = root_node["co2"]

@@ -69,14 +69,14 @@ def import_geometry(mdl_object, filename, context, objects):
 
             
         elif node.type in ["trimesh", "danglymesh", "skin", "aabb"]:
-            mesh = bpy.data.meshes.new(node.name+"Mesh")
+            mesh = bpy.data.meshes.new(node.name + "Mesh")
             ob = bpy.data.objects.new(node.name, mesh)
             
             ### set up geometry ###
             
             verts = [[float(comp) for comp in vert] for vert in node.get_prop_value("verts")]
             faces = [[int(vert) for vert in face[:3]] for face in node.get_prop_value("faces")]
-            mesh.from_pydata(verts,[],faces)
+            mesh.from_pydata(verts, [], faces)
             
             ### set up texture and uv-coords ###
             setup_texture(mesh, node, filename)
@@ -89,9 +89,9 @@ def import_geometry(mdl_object, filename, context, objects):
                 #set up a weight-map for the danlgymesh
                 vertex_group = ob.vertex_groups.new("danglymesh_constraints")
                 ob.nwn_props.danglymesh_vertexgroup = "danglymesh_constraints"
-                for i,[const] in enumerate(node['constraints']):
+                for i, [const] in enumerate(node['constraints']):
                     constraint = 255 - const #a weight of 1 is completely solid when using softbody
-                    weight = constraint/255.0
+                    weight = constraint / 255.0
                 
                     vertex_group.add([i], weight, 'ADD')
             
@@ -116,56 +116,12 @@ def import_geometry(mdl_object, filename, context, objects):
                         
                     ##add the hook modifier
                     hook_name = "nwn_skin_hook_" + bone
-                    hook_mod = ob.modifiers.new(name = hook_name, type = 'HOOK')
+                    hook_mod = ob.modifiers.new(name=hook_name, type='HOOK')
                     hook_mod.object = bpy.data.objects[bone]
                     hook_mod.vertex_group = vertex_group_name
                     
-            elif node.type == "aabb":
-                ## Just for getting to know the aabb tree, we output each
-                # node as a box
-                root_node = node["aabb"]
-                
-                node_stack = [root_node] 
-                
-                while node_stack:
-                    current_node = node_stack.pop()
-                    left = current_node["left"]
-                    right = current_node["right"]
-                    
-                    if left:
-                        node_stack.append(left)
-                    if right:
-                        node_stack.append(right)
-                    
-                    if not (right and left):
-                        bob_mesh = bpy.data.meshes.new("AABB"+"Mesh")
-                        bob = bpy.data.objects.new("AABB", bob_mesh)
-                        x1, y1, z1 = current_node["co1"]
-                        x2, y2, z2 = current_node["co2"]
-                        import mathutils
-                        from mathutils import Vector
-                        
-                        bob.location = Vector(node['position'])
-                        
-                        v0 = [x1, y1, z1]
-                        v1 = [x2, y1, z1] 
-                        v4 = [x2, y2, z1]
-                        v2 = [x1, y2, z1]
-                        v6 = [x1, y2, z2]
-                        v3 = [x1, y1, z2]
-                        v5 = [x2, y1, z2]
-                        v7 = [x2, y2, z2]
-                        
-                        verts = [v0, v1, v2, v3, v4, v5, v6, v7]
-                        verts = [[float(c) for c in vert] for vert in verts]
-                        faces = [[0,1,4,2],
-                                 [3,5,7,6],
-                                 ]
-                        bob_mesh.from_pydata(verts,[], faces)
-                        bob.draw_type = 'BOUNDS'
-
-                        bpy.context.scene.objects.link(bob)
-                
+#            elif node.type == "aabb":
+#                import_aabb(ob, node)
                 
         elif node.type == "light":
             lamp_data = bpy.data.lamps.new(node.name + "Lamp", 'POINT')
@@ -173,12 +129,12 @@ def import_geometry(mdl_object, filename, context, objects):
         
         elif node.type == "emitter":
             #set up a dummy mesh used as the emitter
-            mesh = bpy.data.meshes.new(node.name+"Mesh")
+            mesh = bpy.data.meshes.new(node.name + "Mesh")
             ob = bpy.data.objects.new(node.name, mesh)
             
-            verts = [[0,0,0]]
+            verts = [[0, 0, 0]]
             faces = []
-            mesh.from_pydata(verts,[],[])
+            mesh.from_pydata(verts, [], [])
             
             mesh.validate()
             mesh.update()
@@ -197,7 +153,7 @@ def import_geometry(mdl_object, filename, context, objects):
         #set up location
         location = node.get_prop_value("position")
         if not location:
-            location = [0,0,0]
+            location = [0, 0, 0]
         ob.location = location
         
         #set up rotation
@@ -206,7 +162,7 @@ def import_geometry(mdl_object, filename, context, objects):
             axis = orientation[:3]
             angle = orientation[3]
             
-            ob.rotation_mode="AXIS_ANGLE"
+            ob.rotation_mode = "AXIS_ANGLE"
             ob.rotation_axis_angle = [angle] + axis 
 
                         
@@ -220,7 +176,7 @@ def import_geometry(mdl_object, filename, context, objects):
             for modifier in ob.modifiers:
                 if modifier.type == 'HOOK':
                     
-                    bpy.ops.object.hook_reset(modifier = modifier.name)
+                    bpy.ops.object.hook_reset(modifier=modifier.name)
             bpy.ops.object.mode_set(mode='OBJECT')
         
         ### set up properties for the object ###
@@ -238,7 +194,37 @@ def import_geometry(mdl_object, filename, context, objects):
                 continue
             ob.nwn_props.node_properties[prop.name] = prop.value
 
+def import_aabb(ob, node):
+    """ Imports the aabb data of a node as mesh objects """
+    def recursive_aabb(current_node, parent_ob):
+        bob_mesh = bpy.data.meshes.new("AABB" + "Mesh")
+        bob = bpy.data.objects.new("AABB", bob_mesh)
+        bob.parent = parent_ob
+        x1, y1, z1 = current_node["co1"]
+        x2, y2, z2 = current_node["co2"]
+        
+        verts = [[x1, y1, z1], [x2, y1, z1], [x2, y2, z1],
+                 [x1, y2, z1], [x1, y2, z2], [x1, y1, z2],
+                 [x2, y1, z2], [x2, y2, z2]]
+        faces = [[0, 1, 4, 2]]
+        bob_mesh.from_pydata(verts, [], faces)
+        bob.draw_type = 'BOUNDS'
 
+        bpy.context.scene.objects.link(bob)
+            
+        left = current_node["left"]
+        right = current_node["right"]
+        
+        if left:
+            recursive_aabb(left, bob)
+        if right:
+            recursive_aabb(right,bob)
+            
+    root_node = node["aabb"]
+    
+    recursive_aabb(root_node, ob)
+                
+                
 def setup_texture(mesh, node, filename):
     #if the node has no texture vertices, do nothing
     if not node.get_prop_value("tverts"):
@@ -292,12 +278,12 @@ def setup_texture(mesh, node, filename):
         mat_name = "Smooth_" + str(smoothing_index)
         if not mat_name in mesh.materials:
             if not mat_name in bpy.data.materials:
-                bpy.data.materials.new(name = mat_name)
+                bpy.data.materials.new(name=mat_name)
             mesh.materials.append(bpy.data.materials[mat_name])
             
         faces[face].material_index = mesh.materials.keys().index(mat_name)
-    
 
+    
 def import_animations(mdl_object, context, objects):
     """
     Imports all animations in a single action, as a long timestrip
@@ -315,12 +301,12 @@ def import_animations(mdl_object, context, objects):
         
         #create animation data for the object
         ob.animation_data_create()
-        ob.animation_data.action = bpy.data.actions.new(name = "NWN" + ob.name)
+        ob.animation_data.action = bpy.data.actions.new(name="NWN" + ob.name)
         
         #Simplify access to the important fcurves 
         object_paths[ob.name] = {}
-        object_paths[ob.name]['location']= {}
-        object_paths[ob.name]['rotation_axis_angle']= {}
+        object_paths[ob.name]['location'] = {}
+        object_paths[ob.name]['rotation_axis_angle'] = {}
         
         object_paths[ob.name]['location']['x'] = ob.animation_data.action.fcurves.new(data_path="location", index=0)
         object_paths[ob.name]['location']['y'] = ob.animation_data.action.fcurves.new(data_path="location", index=1)
@@ -332,7 +318,7 @@ def import_animations(mdl_object, context, objects):
         object_paths[ob.name]['rotation_axis_angle']['z'] = ob.animation_data.action.fcurves.new(data_path="rotation_axis_angle", index=3)
         
         #set up the basic information in the animations_dict
-        animations_dict[ob.name] = {'location' : {'x' : [], 'y' : [], 'z' : []}, 
+        animations_dict[ob.name] = {'location' : {'x' : [], 'y' : [], 'z' : []},
                                     'rotation_axis_angle' : {'x' : [], 'y' : [], 'z' : [], 'w' : []}}
         
 
@@ -427,7 +413,7 @@ def import_animation(animation, animations_dict, current_frame, context):
                 continue
             if property.name == "positionkey":
                 for time, x, y, z in property.value:
-                    key_frame = time*fps + start_frame
+                    key_frame = time * fps + start_frame
 #                        print("adding position key to frame %i" % key_frame)
                     animations_dict[node.name]['location']['x'].append((key_frame, x))
                     animations_dict[node.name]['location']['y'].append((key_frame, y))

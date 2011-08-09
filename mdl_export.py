@@ -34,6 +34,8 @@ import os
 import bpy
 from bpy.props import CollectionProperty, StringProperty, BoolProperty
 from bpy_extras.io_utils import ExportHelper
+import mathutils
+from mathutils import Vector
 
 from . import basic_props
 from . import mdl
@@ -181,7 +183,7 @@ def export_node(mdl_object, obj, parent, exported_objects):
         if prop.name in obj.nwn_props.node_properties and not prop.blender_ignore:
             node[prop.name] = eval("obj.nwn_props.node_properties." + prop.name)
 
-    if node_type in ["trimesh", "skin", "danglymesh"]:
+    if node_type in ["trimesh", "skin", "danglymesh", "aabb"]:
         export_mesh(obj, node)
 
     exported_objects.append(obj)
@@ -311,7 +313,108 @@ def export_mesh(obj, node):
             weights.append(line)
         
         node["weights"] = weights
+    
+    elif node.type == "aabb":
+        print("Building aabb data")
+        root_node = build_aabb_tree(obj)
+        node["aabb"] = root_node
         
+def build_aabb_tree(obj):
+    """ Takes a object as an argument and returns a axis aligned bounding box tree """
+    faces = obj.data.faces
+    
+    # Since the face-list in the mesh only contains the indices for the 
+    # verts, we create our own facelist whith the verts coords directly 
+    # available. For simplicity.
+    facelist = [{"verts": [obj.data.vertices[v].co for v in face.vertices],
+                 "index": index, 
+                 "center": face.center } for index,face in enumerate(faces)]
+    level = 1
+    root_node = recursive_aabb(facelist, None, level)
+    return root_node
+    
+def recursive_aabb(facelist, parent, level):
+    """ Recursively build a tree of aabb nodes, returns the root of the subtree. 
+    """
+    # This code is heavily inspired by nwmax and Waylands original code
+    print(len(facelist))
+    
+    if level > 20:
+        raise RuntimeError("Max recursion depth reached when building aabb tree")
+        
+    
+    bottom_left = Vector((10000,10000,10000))
+    top_right = Vector((-10000,-10000,-10000))
+    midpoints = Vector((0,0,0))
+    # First we calculate the bounding box
+    for face in facelist:
+        for x,y,z in face["verts"]:
+            if x < bottom_left.x:
+                bottom_left.x = x
+            if y < bottom_left.y:
+                bottom_left.y = y
+            if z < bottom_left.z:
+                bottom_left.z = z
+                
+            if x > top_right.x:
+                top_right.x = x
+            if y > top_right.y:
+                top_right.y = y
+            if z > top_right.z:
+                top_right.z = z
+        midpoints += face["center"]
+        
+    midpoint = midpoints / len(facelist)
+    
+    bounding_box = {"co1": bottom_left[:], "co2": top_right[:], 
+                    "index": -1, "left": None, 
+                    "right": None, "parent": parent}
+    
+    ## If this is a leaf we're done
+    if len(facelist) == 1:
+        bounding_box["index"] = facelist[0]["index"]
+        return bounding_box
+
+    ## Otherwise we have to decide how to do the splits
+    splits = {"x": {"left": [], "right": []},
+              "y": {"left": [], "right": []},
+              "z": {"left": [], "right": []}}
+    
+    #find the best split, which is the split where the two sides are balanced
+    for face in facelist:
+        if face["center"].x < midpoint.x:
+            splits["x"]["left"].append(face)
+        else:
+            splits["x"]["right"].append(face)
+        if face["center"].y < midpoint.y:
+            splits["y"]["left"].append(face)
+        else:
+            splits["y"]["right"].append(face)    
+        if face["center"].z < midpoint.z:
+            splits["z"]["left"].append(face)
+        else:
+            splits["z"]["right"].append(face)
+            
+    split = None
+    
+    #We calculate the difference between the two sides
+    delta_x = abs(len(splits["x"]["right"]) - len(splits["x"]["left"])) 
+    delta_y = abs(len(splits["y"]["right"]) - len(splits["y"]["left"]))
+    delta_z = abs(len(splits["z"]["right"]) - len(splits["z"]["left"]))
+    
+    # We pick the split where the difference between the splits are as small as possible
+    if delta_x < delta_y and delta_x < delta_z:
+        split = splits["x"]
+    elif delta_y < delta_z:
+        split = splits["y"]
+    else:
+        split = splits["z"]
+    print("Split left: %d right: %d" % (len(split["left"]), len(split["right"])))
+    if split["left"]:
+        bounding_box["left"] = recursive_aabb(split["left"], bounding_box, level + 1)
+    if split["right"]:
+        bounding_box["right"] = recursive_aabb(split["right"], bounding_box, level + 1)
+    return bounding_box
 
 def export_animations(scene, mdl_object,root_object, exported_objects):
     """ Exports the Blender animations of the model """
