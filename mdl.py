@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -381,10 +382,9 @@ class AnimationNode(Node):
    
 if __name__ == "__main__":
     mdl = Model()
-    mdl.from_file("c_werewolf.mdl")
-    #mdl = Model("c_drggreen.mdl.txt")
+    mdl.from_file("tms01_a01_01.mdl")
     
-    #print(mdl)
+    print(mdl)
     #import sys
     #argv = sys.argv
     #compare(*argv[1:3])

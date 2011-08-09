@@ -38,13 +38,13 @@ class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        if context.scene.nwn_props.animation_props.animations:
+        if context.scene.nwn_props.animations:
             return True
         else:
             return False
         
     def execute(self, context):
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         index = anim_props.animation_index
         scene = context.scene
         
@@ -82,7 +82,7 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
         start_frame = last_frame + 10
         end_frame = start_frame + self.length
         
-        anim_ob = scene.nwn_props.animation_props.animations.add()
+        anim_ob = scene.nwn_props.animations.add()
         anim_ob.name = self.name
         
         marker = scene.timeline_markers.new(self.name + "_start")
@@ -110,7 +110,7 @@ class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         
         if anim_props.animations:
             index = anim_props.animation_index
@@ -122,7 +122,7 @@ class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
         return False
         
     def execute(self, context):
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         index = anim_props.animation_index
         
         animation = anim_props.animations[index]
@@ -144,7 +144,7 @@ class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         
         if anim_props.animations:
             return True
@@ -169,7 +169,7 @@ class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
     def invoke(self, context, event):
         wm = context.window_manager
         
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         index = anim_props.animation_index
         animation = anim_props.animations[index]
         self.event = animation.events.add()
@@ -185,7 +185,7 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        if context.scene.nwn_props.animation_props.animations:
+        if context.scene.nwn_props.animations:
             return True
         else:
             return False
@@ -193,7 +193,7 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
 
-        anim_props = context.scene.nwn_props.animation_props
+        anim_props = context.scene.nwn_props
         index = anim_props.animation_index
         
         animation = anim_props.animations[index]
@@ -201,6 +201,6 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
         scene.frame_start = start_frame
         scene.frame_end = animation.end_frame
         scene.frame_current = start_frame
-        scene.frame_start = start_frame # for some reason theres a bug if frame_start is set only once
+        scene.frame_start = start_frame # for some reason there's a bug if frame_start is set only once
         
         return {'FINISHED'}

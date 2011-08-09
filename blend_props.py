@@ -19,9 +19,9 @@
 # <pep8 compliant>
 
 '''
-Created on 2 aug 2011
+Contains custom blender properties for keeping track of Neverwinter specific data
 
-@author: erik
+@author: Erik Ylipää
 '''
 import bpy
 
@@ -48,6 +48,7 @@ def register():
 
 def unregister():
     pass
+    
 
 class BorealisSettings(bpy.types.PropertyGroup):
     """
@@ -62,7 +63,6 @@ class BorealisSettings(bpy.types.PropertyGroup):
                                    default=False)
     
     danglymesh_vertexgroup = bpy.props.StringProperty(name = "Dangle Mesh vertex group")
-    skin_vg_index = bpy.props.IntProperty(name="Index of selected skin vertex group")
     
     @classmethod
     def register(cls):
@@ -177,15 +177,10 @@ class Animation(bpy.types.PropertyGroup):
     start_marker = property(get_start_marker, set_start_marker)
     end_frame = property(get_end_frame, set_end_frame)
     start_frame = property(get_start_frame, set_start_frame)
-    
-    
-class AnimationProperties(bpy.types.PropertyGroup):
-    animations = bpy.props.CollectionProperty(type=Animation)
-    animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")
-     
+
 class WalkmeshColor(bpy.types.PropertyGroup):
     color = bpy.props.FloatVectorProperty(name = "Color", subtype = 'COLOR')
-    type = bpy.props.StringProperty(name = "Surface type")
+    type = bpy.props.StringProperty(name = "Surface type") 
     
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
@@ -198,7 +193,9 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
     supermodel = bpy.props.StringProperty(name = "Supermodel")
     animationscale = bpy.props.FloatProperty(name = "Animation Scale")
     root_object_name = bpy.props.StringProperty(name = "Root object name")
-    animation_props = bpy.props.PointerProperty(type = AnimationProperties)
+    animations = bpy.props.CollectionProperty(type=Animation)
+    animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")    
     walkmesh_colors = bpy.props.CollectionProperty(type=WalkmeshColor)
     
-        
+
+       

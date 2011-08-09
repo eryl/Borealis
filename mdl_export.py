@@ -315,7 +315,7 @@ def export_mesh(obj, node):
 
 def export_animations(scene, mdl_object,root_object, exported_objects):
     """ Exports the Blender animations of the model """
-    animations = scene.nwn_props.animation_props.animations
+    animations = scene.nwn_props.animations
     
     if not animations:
         return

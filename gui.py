@@ -18,9 +18,9 @@
 
 # <pep8 compliant>
 '''
-Created on 11 aug 2010
+Contains GUI elements for working with Neverwinter Nights models in Blender
 
-@author: erik
+@author: Erik Ylipää
 '''
 import bpy
 
@@ -67,27 +67,26 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
     
     def draw(self, context):
         layout = self.layout
-        ### animation settings ###
-        box = layout.box()
         
+        box = layout.box()
         box.label(text="Animations")
         
-        anim_props = context.scene.nwn_props.animation_props
+        nwn_props = context.scene.nwn_props
         
         row = box.row()
         col = row.column()
 
-        col.template_list(anim_props, "animations",
-                          anim_props, "animation_index",
+        col.template_list(nwn_props, "animations",
+                          nwn_props, "animation_index",
                           rows=3)
         
         col = row.column(align=True)
         col.operator("scene.add_nwn_anim", icon='ZOOMIN', text="")
         col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
         
-        if anim_props.animations:
-            index = anim_props.animation_index
-            animation = anim_props.animations[index]
+        if nwn_props.animations:
+            index = nwn_props.animation_index
+            animation = nwn_props.animations[index]
             
             
             box.row().operator("scene.nwn_anim_focus")

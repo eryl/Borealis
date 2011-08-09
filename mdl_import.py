@@ -15,7 +15,6 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
 # ##### END GPL LICENSE BLOCK #####
-
 # <pep8 compliant>
 
 '''
@@ -48,7 +47,8 @@ def import_mdl(filename, context):
     
     #Some of the import stuff assumes we're in object-mode, and we set it
     #accordingly
-    bpy.ops.object.mode_set(mode='OBJECT')
+    #Theres a bug here; if there are no objects in the scene we can't set the mode to OBJECT
+    #bpy.ops.object.mode_set(mode='OBJECT')
     
     import_geometry(mdl_object, filename, context, objects)
     import_animations(mdl_object, context, objects)
@@ -68,7 +68,7 @@ def import_geometry(mdl_object, filename, context, objects):
             ob = bpy.data.objects.new(node.name, None)
 
             
-        elif node.type == "trimesh" or node.type=="danglymesh" or node.type=="skin":
+        elif node.type in ["trimesh", "danglymesh", "skin", "aabb"]:
             mesh = bpy.data.meshes.new(node.name+"Mesh")
             ob = bpy.data.objects.new(node.name, mesh)
             
@@ -120,6 +120,52 @@ def import_geometry(mdl_object, filename, context, objects):
                     hook_mod.object = bpy.data.objects[bone]
                     hook_mod.vertex_group = vertex_group_name
                     
+            elif node.type == "aabb":
+                ## Just for getting to know the aabb tree, we output each
+                # node as a box
+                root_node = node["aabb"]
+                
+                node_stack = [root_node] 
+                
+                while node_stack:
+                    current_node = node_stack.pop()
+                    left = current_node["left"]
+                    right = current_node["right"]
+                    
+                    if left:
+                        node_stack.append(left)
+                    if right:
+                        node_stack.append(right)
+                    
+                    if not (right and left):
+                        bob_mesh = bpy.data.meshes.new("AABB"+"Mesh")
+                        bob = bpy.data.objects.new("AABB", bob_mesh)
+                        x1, y1, z1 = current_node["co1"]
+                        x2, y2, z2 = current_node["co2"]
+                        import mathutils
+                        from mathutils import Vector
+                        
+                        bob.location = Vector(node['position'])
+                        
+                        v0 = [x1, y1, z1]
+                        v1 = [x2, y1, z1] 
+                        v4 = [x2, y2, z1]
+                        v2 = [x1, y2, z1]
+                        v6 = [x1, y2, z2]
+                        v3 = [x1, y1, z2]
+                        v5 = [x2, y1, z2]
+                        v7 = [x2, y2, z2]
+                        
+                        verts = [v0, v1, v2, v3, v4, v5, v6, v7]
+                        verts = [[float(c) for c in vert] for vert in verts]
+                        faces = [[0,1,4,2],
+                                 [3,5,7,6],
+                                 ]
+                        bob_mesh.from_pydata(verts,[], faces)
+                        bob.draw_type = 'BOUNDS'
+
+                        bpy.context.scene.objects.link(bob)
+                
                 
         elif node.type == "light":
             lamp_data = bpy.data.lamps.new(node.name + "Lamp", 'POINT')
@@ -357,7 +403,7 @@ def import_animation(animation, animations_dict, current_frame, context):
     end_frame = start_frame + length
     
     #The animation object holds the borealis-specific data, such as marker information
-    anim_ob = scene.nwn_props.animation_props.animations.add()
+    anim_ob = scene.nwn_props.animations.add()
     anim_ob.name = animation.name
     #set the start marker
     m = scene.timeline_markers.new(animation.name + "_start")

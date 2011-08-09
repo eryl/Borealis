@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ##### BEGIN GPL LICENSE BLOCK #####
 #
 #  This program is free software; you can redistribute it and/or
@@ -31,6 +32,8 @@ information about which nodes has which properties are contained herein.
 
 @author: Erik Ylipää
 '''
+
+TAB_SPACE = 2
 
 class Property:
     nodes = []
@@ -186,6 +189,80 @@ class ColorProperty(FloatVectorProperty):
     min_value = 0
     max_value = 1
 
+class AABBTree(MatrixProperty):
+    def read_value(self, current_line, model_data):
+        def new_node(x1,y1,z1, x2, y2, z2, index, parent = None):
+            tree_node = {"co1": [float(x1), float(y1), float(z1)], 
+                         "co2": [float(x2), float(y2), float(z2)],
+                         "left": None,
+                         "right": None,
+                         "index": int(index),
+                         "parent": parent}
+            return tree_node
+        
+        aabb, x1, y1, z1, x2, y2, z2, index = current_line
+        root_node = new_node(x1, y1, z1, x2, y2, z2, index)
+        node_stack = [root_node]
+        self.value = root_node
+        done = False
+        
+        while(not done):
+            #Peek ahead to see if the next line is also a node in the tree
+            if len(model_data[0]) == 7:
+                current_line = model_data.pop(0)
+                x1, y1, z1, x2, y2, z2, index = current_line
+                parent = node_stack[-1]
+                current_node = new_node(x1,y1,z1, x2, y2, z2,
+                                         index, parent)
+                if not parent["left"]:
+                    parent["left"] = current_node
+                else:
+                    parent["right"] = current_node
+                    node_stack.pop()
+                    
+                if current_node["index"] == -1:
+                    node_stack.append(current_node)
+            else:
+                done = True
+        self.value_written = True
+    
+    def update_value(self, value):
+        """
+        Updates the value of the matrix. value must be a matrix, a sequence of sequences
+        """
+        print("AABB update value Not implemented")
+    
+    def output_values(self):
+        print("AABB output value Not implemented")
+        root_node = self.value
+        x1, y1, z1 = root_node["co1"]
+        x2, y2, z2 = root_node["co2"]
+        index = root_node["index"]
+        yield " "*TAB_SPACE + "aabb %.7f %.7f %.7f %.7f %.7f %.7f %d" % (x1, y1, z1, 
+                                                         x2, y2, z2, index)
+        level = 2
+        node_stack = []
+        node_stack.append((level, root_node["right"],))
+        node_stack.append((level, root_node["left"],))
+
+        while node_stack:
+            level, current_node = node_stack.pop()
+            x1, y1, z1 = current_node["co1"]
+            x2, y2, z2 = current_node["co2"]
+            index = current_node["index"]
+            yield (" "*TAB_SPACE*level + 
+                   "%.7f %.7f %.7f %.7f %.7f %.7f %d" % 
+                   (x1, y1, z1, x2, y2, z2, index))
+            
+            left = current_node["left"]
+            right = current_node["right"]
+            if right:
+                node_stack.append((level+1, current_node["right"],))
+            if left:
+                node_stack.append((level+1, current_node["left"],))
+            
+
+    
 class NodeProperties():
     node_types = None
     props_list = None
@@ -224,36 +301,35 @@ class NodeProperties():
             cls.build_dictionary()
         cls.node_types = cls.props_dict.keys()
     
-    
+
 class GeometryNodeProperties(NodeProperties):
     """ Class for collecting all geometry-node properties
     """
-    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
-                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
-                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
+    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light", "aabb"], blender_ignore=True),
+                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light"], blender_ignore=True),
+                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light"], blender_ignore=True),
                 
                     ### mesh ###
-                    ColorProperty("ambient", nodes = ["trimesh", "danglymesh", "skin"]),
-                    ColorProperty("diffuse", nodes = ["trimesh", "danglymesh", "skin"]),
-                    ColorProperty("specular", nodes = ["trimesh", "danglymesh", "skin"]),
-                    IntProperty("shininess", nodes = ["trimesh", "danglymesh", "skin"]),
-                    BooleanProperty("shadow", nodes = ["trimesh", "danglymesh", "skin"]),
-                    StringProperty("bitmap", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
-                    FloatMatrixProperty("verts", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
-                    FloatMatrixProperty("tverts", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
-                    IntMatrixProperty("faces", nodes = ["trimesh", "danglymesh", "skin"], blender_ignore=True),
+                    ColorProperty("ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                    ColorProperty("diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                    ColorProperty("specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                    IntProperty("shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                    BooleanProperty("shadow", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                    StringProperty("bitmap", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                    FloatMatrixProperty("verts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                    FloatMatrixProperty("tverts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                    IntMatrixProperty("faces", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                     FloatProperty("alpha", nodes = ["trimesh", "danglymesh", "skin"]),
                     FloatProperty("scale", nodes = ["trimesh", "danglymesh", "skin"]),
                     ColorProperty("selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"]),
-                    
-                    ##not often used ##
                     BooleanProperty('rotatetexture', nodes = ["trimesh", "danglymesh", "skin"]),
                     BooleanProperty('tilefade', nodes = ["trimesh", "danglymesh", "skin"]),
-                    BooleanProperty('transparencyhint', nodes = ["trimesh", "danglymesh", "skin"]),
+                    BooleanProperty('transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
                     BooleanProperty('beaming', nodes = ["trimesh", "danglymesh", "skin"]),
                     BooleanProperty('inheritcolor', nodes = ["trimesh", "danglymesh", "skin"]),
                     BooleanProperty('center', nodes = ["trimesh", "danglymesh", "skin"]),
-                    #BooleanProperty('render', nodes = ["trimesh", "danglymesh", "skin"]),
+                    
+                    BooleanProperty('render', nodes = ["trimesh", "danglymesh", "skin"]),
                     ColorProperty('colors', nodes = ["trimesh", "danglymesh", "skin"]),
                     
                     ### danglymesh ###
@@ -266,7 +342,7 @@ class GeometryNodeProperties(NodeProperties):
                     MatrixProperty("weights", nodes = ["skin"], blender_ignore=True),
                     
                     ### aabb ### 
-                    MatrixProperty("aabb", nodes = ["aabb"], blender_ignore=True),
+                    AABBTree("aabb", nodes = ["aabb"], blender_ignore=True),
                     
                     ### Emitter properties ###
                     ColorProperty('colorstart', nodes = ["emitter"]),
