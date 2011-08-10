@@ -175,7 +175,7 @@ class Model(object):
         out_string += "classification %s\n" % self.classification
         out_string += "setanimationscale %s\n" % self.setanimationscale
         
-        out_string += str(self.geometry)
+        out_string += str(self.geometry) + "\n"
         
         out_string += "\n".join([str(animation) for animation in self.animations])
         
@@ -226,7 +226,7 @@ class Geometry:
         yield "beginmodelgeom %s" % self.name
         for node in self.nodes:
             yield str(node)
-        yield "doneanim %s " % self.name
+        yield "endmodelgeom %s" % self.name
 
     def __str__(self):
         return "\n".join([line for line in self.output_geometry()])
@@ -379,10 +379,21 @@ class AnimationNode(Node):
         
         for prop in props:
             self.properties[prop.name] = copy.copy(prop)
-   
+    
+    def output_node(self):
+        # We get the properties list from the GeometryNodeProperties to
+        # produce the output in the correct order
+        props = basic_props.AnimationNodeProperties.get_node_properties(self.type)
+        yield "node %s %s" % (self.type, self.name)
+        for property in props:
+            if property.name in self.properties:
+                if self.properties[property.name].value_written:
+                    yield str(self.properties[property.name])
+        yield "endnode"
+        
 if __name__ == "__main__":
     mdl = Model()
-    mdl.from_file("tms01_a01_01.mdl")
+    mdl.from_file("c_allip.mdl")
     
     print(mdl)
     #import sys

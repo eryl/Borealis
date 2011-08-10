@@ -80,14 +80,14 @@ class Property:
         self.value_written = True
     
 class NumberProperty(Property):
-    pass
-#    min_value = None
-#    max_value = None
-#    def __init__(self, name, nodes, blender_ignore = False, 
-#                 default_value = 0, min_value = None, max_value = None):
-#        self.min_value = min_value
-#        self.max_value = max_value
-#        Property.__init__(self, name, nodes, blender_ignore, default_value)
+    min_value = None
+    max_value = None
+    default_value = None
+    def __init__(self, default_value = 0, min_value = 0, max_value = 1, **kwargs):
+        self.min_value = min_value
+        self.max_value = max_value
+        self.default_value = 0
+        Property.__init__(self, **kwargs)
 
 #vector properties are properties that have many values on one row
 class VectorProperty(Property):

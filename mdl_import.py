@@ -77,6 +77,7 @@ def import_geometry(mdl_object, filename, context, objects):
             
             verts = [[float(comp) for comp in vert] for vert in node.get_prop_value("verts")]
             faces = [[int(vert) for vert in face[:3]] for face in node.get_prop_value("faces")]
+            print("Number of faces in %s: %d" % (node.name, len(faces)))
             mesh.from_pydata(verts, [], faces)
             
             ### set up texture and uv-coords ###
@@ -143,7 +144,7 @@ def import_geometry(mdl_object, filename, context, objects):
         
         #set up parent, we assume the parent node is already imported
         parent_name = node.get_prop_value("parent")
-        
+        print("Node %s parent name: %s" % (node.name, parent_name))
         try:
             parent_ob = bpy.data.objects[parent_name]
         except KeyError:

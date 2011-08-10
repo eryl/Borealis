@@ -38,6 +38,7 @@ import mathutils
 from mathutils import Vector
 
 from . import basic_props
+from . import blend_props
 from . import mdl
     
 
@@ -441,7 +442,7 @@ def export_animation(animation_data, scene, animation, mdl_object, root_object):
     for event in animation.events:
         nwn_anim.events.append((event.time, event.type))
     root_node = nwn_anim.new_node("dummy", root_object.name)
-    root_node.parent = 'NULL'
+    root_node['parent'] = 'NULL'
     
     for child in root_object.children:
         if blend_props.get_nwn_props(child).is_nwn_object:
