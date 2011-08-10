@@ -25,6 +25,7 @@ Contains GUI elements for working with Neverwinter Nights models in Blender
 import bpy
 
 from . import basic_props
+from . import blend_props
 
 class OBJECT_PT_nwn_colors(bpy.types.Panel):
     bl_idname = "SCENE_PT_nwn_basic_settings"
@@ -140,37 +141,28 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
      
     def draw(self, context):
         layout = self.layout
-
         obj = context.object
+        props = blend_props.get_nwn_props(obj)
         
         row = layout.row()
-        row.prop(obj.nwn_props, "is_nwn_object", text="Aurora Object")
+        row.prop(props, "is_nwn_object", text="Aurora Object")
         
-        if obj.nwn_props.is_nwn_object:
+        if props.is_nwn_object:
             ### node settings ###
             box = layout.box()
             
             box.label(text="Node settings")
-
-            node_type = "dummy"
-            
-            #only display the node types which makes sense for the selected blender object
-            if not obj.data:
-                box.prop(obj.nwn_props, "nwn_node_type")
-                node_type = obj.nwn_props.nwn_node_type
-            else:
-                box.prop(obj.data, "nwn_node_type")
-                node_type = obj.data.nwn_node_type
-            
+            node_type = props.nwn_node_type
+            box.prop(props, "nwn_node_type")
             
             if node_type == "danglymesh":
                 box.label(text = "Dangly Vertex Group:")
-                box.prop_search(obj.nwn_props, "danglymesh_vertexgroup" ,obj, "vertex_groups", text = "")
+                box.prop_search(props, "danglymesh_vertexgroup" ,obj, "vertex_groups", text = "")
             
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
             col_flow = box.column_flow(columns=2)
             for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
-                if prop in bpy.types.BorealisNodeProps.properties and prop.show_in_gui:
-                    col_flow.prop(obj.nwn_props.node_properties, prop.name)
+                if prop.show_in_gui:
+                    col_flow.prop(props.node_properties, prop.name)
             

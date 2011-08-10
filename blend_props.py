@@ -28,33 +28,104 @@ import bpy
 from . import basic_props
         
 def register():
-    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisSettings)
+    bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisDummySettings)
+    bpy.types.Mesh.nwn_props = bpy.props.PointerProperty(type=BorealisMeshSettings)
+    bpy.types.Lamp.nwn_props = bpy.props.PointerProperty(type=BorealisLightSettings)
     bpy.types.Scene.nwn_props = bpy.props.PointerProperty(type=BorealisBasicProperties)
-    #we set different node type enum lists, to make sure only node types relevant to the 
-    #selected blender object are allowed
-    bpy.types.Mesh.nwn_node_type = bpy.props.EnumProperty(items = [("trimesh","trimesh","trimesh"),
-                                    ("danglymesh","danglymesh","danglymesh"),
-                                    ("skin","skin","skin"),
-                                    ("emitter","emitter","emitter"),
-                                    ("aabb","aabb","aabb")],
-                                   name = "Node Type",
-                                   description = "The NWN Node type of this object")
-    
-    bpy.types.Lamp.nwn_node_type = bpy.props.EnumProperty(items = [("light","light","light")],
-                                   name = "Node Type",
-                                   description = "The NWN Node type of this object")
-    
-
 
 def unregister():
     pass
+
+def get_nwn_props(obj):
+    if obj.type == 'LAMP':
+        return obj.data.nwn_props
+    elif obj.type == 'MESH':
+        return obj.data.nwn_props
+    else:
+        return obj.nwn_props
+    
+def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
+    print("Adding properties to %s with the types %s" % (str(data_path), str(node_types) ))
+    #We create a dynamic class to use for node properties 
+    attribute_dict = {"bl_idname": classname, 
+                      "bl_label" : "Neverwinter Nights Node properties", 
+                      "properties" : []}
+    
+    props = []
+    for node_type in node_types:
+        props.extend(basic_props.GeometryNodeProperties.get_node_properties(node_type))
+    
+    #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
+    for prop in props:
+        if  prop.blender_ignore:
+            continue
+        
+        ##The order of the cases are important since some properties are subtypes of other
+        if isinstance(prop, basic_props.ColorProperty):
+            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
+                                                                      subtype='COLOR', min = 0, max = 1)
+            attribute_dict["properties"].append(prop)
+        
+        elif isinstance(prop, basic_props.StringProperty):
+            attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
+            attribute_dict["properties"].append(prop)
+        
+        elif isinstance(prop, basic_props.FloatVectorProperty):
+            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
+            attribute_dict["properties"].append(prop)
+        
+        elif isinstance(prop, basic_props.BooleanProperty):
+            attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
+            attribute_dict["properties"].append(prop)
+            
+        elif isinstance(prop, basic_props.EnumProperty):
+            items = [(name, name, name) for name in prop.enums]
+            attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
+                                                               items = items)
+            attribute_dict["properties"].append(prop)
+        
+        elif isinstance(prop, basic_props.IntProperty):
+            attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
+            attribute_dict["properties"].append(prop)
+        
+        elif isinstance(prop, basic_props.FloatProperty):
+            attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
+            attribute_dict["properties"].append(prop)
+
+        if prop.name not in attribute_dict:
+            print("Failed to add property %s of type %s" % (prop.name, prop.__class__))
+                  
+    #we now create a dynamic class and register it so it will be usable by others
+    node_props_class = type(classname, (bpy.types.PropertyGroup,), attribute_dict)
+    bpy.utils.register_class(node_props_class)
+    
+    data_path.node_properties = bpy.props.PointerProperty(type=node_props_class)
+
     
 
-class BorealisSettings(bpy.types.PropertyGroup):
+class BorealisDummySettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
     """
+    node_types = ["dummy"]
     nwn_node_type = bpy.props.EnumProperty(items = [("dummy","dummy","dummy")],
+                                       name = "Node Type",
+                                       description = "The NWN Node type of this object")
+    
+    is_nwn_object = bpy.props.BoolProperty(name = "Is Neverwinter Nights Object", 
+                                   description="Toggles whether this object is an nwn object and should be included in exports", 
+                                   default=False)
+    
+    @classmethod
+    def register(cls):
+        add_properties(cls, cls.node_types, "BorealisDummyNodeProps")
+
+class BorealisMeshSettings(bpy.types.PropertyGroup):
+    """
+    Properties specific for the nwn models, gets attached to all objects.
+    """
+    node_types = ["trimesh", "danglymesh", "skin", "aabb"]
+    nwn_node_type = bpy.props.EnumProperty(items = [(t, t, t) for t in node_types],
                                        name = "Node Type",
                                        description = "The NWN Node type of this object")
     
@@ -66,59 +137,77 @@ class BorealisSettings(bpy.types.PropertyGroup):
     
     @classmethod
     def register(cls):
-        
-        #We create a dynamic class to use for node properties 
-        classname = "BorealisNodeProps"
-        attribute_dict = {"bl_idname": classname, 
-                          "bl_label" : "Neverwinter Nights Node properties", 
-                          "properties" : []}
-        
-       
-        #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
-        for prop in basic_props.GeometryNodeProperties.get_properties():
-            # one case for each of the different property types
-            if  prop.blender_ignore:
-                continue
-            
-            ##The order of the cases are important since some properties are subtypes of other
-            if isinstance(prop, basic_props.ColorProperty):
-                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
-                                                                          subtype='COLOR', min = 0, max = 1)
-                attribute_dict["properties"].append(prop)
-            
-            elif isinstance(prop, basic_props.StringProperty):
-                attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
-                attribute_dict["properties"].append(prop)
-            
-            elif isinstance(prop, basic_props.FloatVectorProperty):
-                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
-                attribute_dict["properties"].append(prop)
-            
-            elif isinstance(prop, basic_props.BooleanProperty):
-                attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
-                attribute_dict["properties"].append(prop)
-                
-            elif isinstance(prop, basic_props.EnumProperty):
-                items = [(name, name, name) for name in prop.enums]
-                attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
-                                                                   items = items)
-                attribute_dict["properties"].append(prop)
-            
-            elif isinstance(prop, basic_props.IntProperty):
-                attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
-                attribute_dict["properties"].append(prop)
-            elif isinstance(prop, basic_props.FloatProperty):
-                attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
-                attribute_dict["properties"].append(prop)
+        add_properties(cls, cls.node_types, "BorealisMeshNodeProps")
 
-            if prop.name not in attribute_dict:
-                print("Failed to add property %s of type %s" % (prop.name, prop.__class__))
-                      
-        #we now create a dynamic class and register it so it will be usable by this class
-        node_props_class = type(classname, (bpy.types.PropertyGroup,), attribute_dict)
-        bpy.utils.register_class(node_props_class)
+class BorealisLightSettings(bpy.types.PropertyGroup):
+    """
+    Properties specific for the nwn models, gets attached to all objects.
+    """
+    node_types = ["light"]
+    nwn_node_type = bpy.props.EnumProperty(items = [(t, t, t) for t in node_types],
+                                       name = "Node Type",
+                                       description = "The NWN Node type of this object")
+    
+    is_nwn_object = bpy.props.BoolProperty(name = "Is Neverwinter Nights Object", 
+                                   description="Toggles whether this object is an nwn object and should be included in exports", 
+                                   default=False)
+    
+    @classmethod
+    def register(cls):
+        add_properties(cls, cls.node_types, "BorealisLightNodeProps")
         
-        cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
+#        #We create a dynamic class to use for node properties 
+#        classname = "BorealisNodeProps"
+#        attribute_dict = {"bl_idname": classname, 
+#                          "bl_label" : "Neverwinter Nights Node properties", 
+#                          "properties" : []}
+#        
+#       
+#        #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
+#        for prop in basic_props.GeometryNodeProperties.get_properties():
+#            # one case for each of the different property types
+#            if  prop.blender_ignore:
+#                continue
+#            
+#            ##The order of the cases are important since some properties are subtypes of other
+#            if isinstance(prop, basic_props.ColorProperty):
+#                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
+#                                                                          subtype='COLOR', min = 0, max = 1)
+#                attribute_dict["properties"].append(prop)
+#            
+#            elif isinstance(prop, basic_props.StringProperty):
+#                attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
+#                attribute_dict["properties"].append(prop)
+#            
+#            elif isinstance(prop, basic_props.FloatVectorProperty):
+#                attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
+#                attribute_dict["properties"].append(prop)
+#            
+#            elif isinstance(prop, basic_props.BooleanProperty):
+#                attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
+#                attribute_dict["properties"].append(prop)
+#                
+#            elif isinstance(prop, basic_props.EnumProperty):
+#                items = [(name, name, name) for name in prop.enums]
+#                attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
+#                                                                   items = items)
+#                attribute_dict["properties"].append(prop)
+#            
+#            elif isinstance(prop, basic_props.IntProperty):
+#                attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
+#                attribute_dict["properties"].append(prop)
+#            elif isinstance(prop, basic_props.FloatProperty):
+#                attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
+#                attribute_dict["properties"].append(prop)
+#
+#            if prop.name not in attribute_dict:
+#                print("Failed to add property %s of type %s" % (prop.name, prop.__class__))
+#                      
+#        #we now create a dynamic class and register it so it will be usable by this class
+#        node_props_class = type(classname, (bpy.types.PropertyGroup,), attribute_dict)
+#        bpy.utils.register_class(node_props_class)
+#        
+#        cls.node_properties = bpy.props.PointerProperty(type=node_props_class)
     
 
 class AnimationEvent(bpy.types.PropertyGroup):

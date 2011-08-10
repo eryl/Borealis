@@ -156,7 +156,7 @@ def export_geometry(mdl_object, obj, exported_objects):
     node['parent'] = "NULL"
     exported_objects.append(obj)
     for child in obj.children:
-        if child.nwn_props.is_nwn_object:
+        if blend_props.get_nwn_props(child).is_nwn_object:
             export_node(mdl_object, child, obj.name, exported_objects)
     
         
@@ -164,10 +164,9 @@ def export_node(mdl_object, obj, parent, exported_objects):
     """ Export an object as a NWN geometry node.
         
     """
-    if obj.type in ['MESH', 'LIGHT']:
-        node_type = obj.data.nwn_node_type
-    else:
-        node_type = obj.nwn_props.nwn_node_type
+    
+    props = blend_props.get_nwn_props(obj)
+    node_type = props.nwn_node_type
         
     node = mdl_object.new_geometry_node(node_type, obj.name)
     node['parent'] = parent
@@ -180,15 +179,15 @@ def export_node(mdl_object, obj, parent, exported_objects):
     
     for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
         #only export the properties which are set in the properties group
-        if prop.name in obj.nwn_props.node_properties and not prop.blender_ignore:
-            node[prop.name] = eval("obj.nwn_props.node_properties." + prop.name)
+        if prop.name in props.node_properties and not prop.blender_ignore:
+            node[prop.name] = eval("props.node_properties." + prop.name)
 
     if node_type in ["trimesh", "skin", "danglymesh", "aabb"]:
         export_mesh(obj, node)
 
     exported_objects.append(obj)
     for child in obj.children:
-        if child.nwn_props.is_nwn_object:
+        if props.is_nwn_object:
             export_node(mdl_object, child, obj.name, exported_objects)
 
 def export_mesh(obj, node):
@@ -268,7 +267,7 @@ def export_mesh(obj, node):
         node['bitmap'] = "NULL"
         
     if node.type == "danglymesh":
-        vertex_group_name = obj.nwn_props.danglymesh_vertexgroup
+        vertex_group_name = blend_props.get_nwn_props(obj).danglymesh_vertexgroup
         if vertex_group_name:
             vertex_group = obj.vertex_groups[vertex_group_name]
             constraints = []
@@ -445,19 +444,15 @@ def export_animation(animation_data, scene, animation, mdl_object, root_object):
     root_node.parent = 'NULL'
     
     for child in root_object.children:
-        if child.nwn_props.is_nwn_object:
+        if blend_props.get_nwn_props(child).is_nwn_object:
             export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, root_object.name)
         
 def export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, obj, parent):
     """ Exports the animations of a Blender Object as a nwn animation node.
     
     """
-    
-    if obj.type in ['MESH', 'LIGHT']:
-        node_type = obj.data.nwn_node_type
-    else:
-        node_type = obj.nwn_props.nwn_node_type
-    
+    props = blend_props.get_nwn_props(obj)
+    node_type = props.nwn_node_type
     node = nwn_anim.new_node("dummy", obj.name)
     node['parent'] = parent
     start_frame = animation.start_frame
@@ -473,7 +468,7 @@ def export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, 
             node['orientationkey'] = orientationkey
             
     for child in obj.children:
-        if child.nwn_props.is_nwn_object:
+        if blend_props.get_nwn_props(child).is_nwn_object:
             export_animation_node(fps, animation_data, animation, nwn_anim, mdl_object, child, obj.name)
     
 def build_animation_data(objects, animations):

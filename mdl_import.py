@@ -88,7 +88,7 @@ def import_geometry(mdl_object, filename, context, objects):
             if node.type == "danglymesh":
                 #set up a weight-map for the danlgymesh
                 vertex_group = ob.vertex_groups.new("danglymesh_constraints")
-                ob.nwn_props.danglymesh_vertexgroup = "danglymesh_constraints"
+                blend_props.get_nwn_props(ob).danglymesh_vertexgroup = "danglymesh_constraints"
                 for i, [const] in enumerate(node['constraints']):
                     constraint = 255 - const #a weight of 1 is completely solid when using softbody
                     weight = constraint / 255.0
@@ -179,20 +179,15 @@ def import_geometry(mdl_object, filename, context, objects):
                     bpy.ops.object.hook_reset(modifier=modifier.name)
             bpy.ops.object.mode_set(mode='OBJECT')
         
-        ### set up properties for the object ###
-        ## We're making the assumption that the custom properties from BorealisTools are
-        #already registered for all objects
-        if ob.type == 'EMPTY':
-            ob.nwn_props.nwn_node_type = node.type
-        else:
-            ob.data.nwn_node_type = node.type
-        ob.nwn_props.is_nwn_object = True
         
+        props = blend_props.get_nwn_props(ob)
+        props.nwn_node_type  = node.type    
+        props.is_nwn_object = True
         
         for prop in node.properties.values():
             if prop.blender_ignore or not prop.value_written:
                 continue
-            ob.nwn_props.node_properties[prop.name] = prop.value
+            props.node_properties[prop.name] = prop.value
 
 def import_aabb(ob, node):
     """ Imports the aabb data of a node as mesh objects """
