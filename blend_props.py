@@ -24,6 +24,8 @@ Contains custom blender properties for keeping track of Neverwinter specific dat
 @author: Erik Ylipää
 '''
 import bpy
+import mathutils
+from mathutils import Color
 
 from . import basic_props
         
@@ -52,7 +54,20 @@ def get_node_props(obj):
     elif node_type == "dummy":
         return props.node_properties
 
-    
+def create_walkmesh_materials(ob):
+     #Make sure the materials already exist, otherwise we create them
+    for i, material in enumerate(basic_props.walkmesh_materials):
+        if material["name"] not in bpy.data.materials:
+            mat=bpy.data.materials.new(material["name"])
+            mat.diffuse_color = material["color"]
+            mat.specular_color = (mat.diffuse_color 
+                                  + Color((0.2, 0.2, 0.2)))
+            mat["nwn_walkmesh_index"] = i
+        else:
+            mat = bpy.data.materials[material["name"]]
+        if mat.name not in ob.data.materials: 
+            ob.data.materials.append(mat)
+        
 def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
     #We create a dynamic class to use for node properties 
     attribute_dict = {"bl_idname": classname, 

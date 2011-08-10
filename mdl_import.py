@@ -33,6 +33,7 @@ import bpy
 
 from . import mdl
 from . import blend_props
+from . import basic_props
 
 IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
 DEFAULT_IMG_SIZE = 128
@@ -77,7 +78,6 @@ def import_geometry(mdl_object, filename, context, objects):
             
             verts = [[float(comp) for comp in vert] for vert in node.get_prop_value("verts")]
             faces = [[int(vert) for vert in face[:3]] for face in node.get_prop_value("faces")]
-            print("Number of faces in %s: %d" % (node.name, len(faces)))
             mesh.from_pydata(verts, [], faces)
             
             ### set up texture and uv-coords ###
@@ -122,7 +122,16 @@ def import_geometry(mdl_object, filename, context, objects):
                     hook_mod.object = bpy.data.objects[bone]
                     hook_mod.vertex_group = vertex_group_name
                     
-#            elif node.type == "aabb":
+            elif node.type == "aabb":
+                blend_props.create_walkmesh_materials(ob)
+                mesh_mats = [mat.name for mat in ob.data.materials[:]]
+                for i, face in enumerate(node["faces"]):
+                    mat_id = face[-1]
+                    material = basic_props.walkmesh_materials[mat_id]
+                    
+                    index = mesh_mats.index(material["name"])
+                    ob.data.faces[i].material_index = index
+                    
 #                import_aabb(ob, node)
                 
         elif node.type == "light":

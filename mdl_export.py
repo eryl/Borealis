@@ -212,9 +212,15 @@ def export_mesh(obj, node):
     for i, face in enumerate(mesh.faces):
         v1, v2, v3 = face.vertices[:]
         smooth_group = 1
+        mat_id = 1
         if mesh.materials:
             if "smooth" in mesh.materials[face.material_index].name.lower():
                 smooth_group = face.material_index + 1
+            mat = mesh.materials[face.material_index]
+            mat_names = [mat_["name"] for mat_ in basic_props.walkmesh_materials]
+            if mat.name in mat_names:
+                mat_id = mat_names.index(mat.name)
+            
         if uv_faces:
             uv_co1, uv_co2, uv_co3 = uv_faces[i].uv1, uv_faces[i].uv2, uv_faces[i].uv3
             
@@ -247,7 +253,7 @@ def export_mesh(obj, node):
                 uv3 = uv_verts_dict[uv_co3[0]][uv_co3[1]]
         else:
             uv1, uv2, uv3 = 0,0,0
-        face_line = [v1, v2, v3, smooth_group, uv1, uv2, uv3, 1] #don't know what the last value is 
+        face_line = [v1, v2, v3, smooth_group, uv1, uv2, uv3, mat_id] 
         
         faces.append(face_line)
     

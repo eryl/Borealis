@@ -27,6 +27,11 @@ with Neverwinter Nights specific data in Blender.
 @author: Erik Ylipää
 '''
 import bpy
+import mathutils
+from mathutils import Color
+
+from . import basic_props
+
 
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     """ Operator which removes an nwn animation from the scene object """
@@ -204,3 +209,20 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
         scene.frame_start = start_frame # for some reason there's a bug if frame_start is set only once
         
         return {'FINISHED'}
+    
+#class OBJECT_OT_create_walkmesh_materials(bpy.types.Operator):
+#    bl_idname ="object.create_walkmesh_materials"
+#    bl_label = "Create Walkmesh materials"
+#    bl_description = "Creates walkmesh materials for the selected mesh"
+#    
+#    
+#    @classmethod
+#    def poll(cls, context):
+#        return True
+#    
+#    def execute(self, context):
+#        return {'FINISHED'}
+#    
+#    def invoke(self, context, event):
+#       
+    
