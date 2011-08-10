@@ -54,7 +54,6 @@ def get_node_props(obj):
 
     
 def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
-    print("Adding properties to %s with the types %s" % (str(data_path), str(node_types) ))
     #We create a dynamic class to use for node properties 
     attribute_dict = {"bl_idname": classname, 
                       "bl_label" : "Neverwinter Nights Node properties", 
@@ -115,7 +114,7 @@ class BorealisDummySettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
     """
-    node_types = ["dummy", "emitter"]
+    node_types = ["dummy", "emitter", "reference"]
     nwn_node_type = bpy.props.EnumProperty(items = [(t, t, t) for t in node_types],
                                        name = "Node Type",
                                        description = "The NWN Node type of this object")

@@ -305,11 +305,11 @@ class NodeProperties():
 class GeometryNodeProperties(NodeProperties):
     """ Class for collecting all geometry-node properties
     """
-    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light", "aabb"], blender_ignore=True),
-                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light"], blender_ignore=True),
-                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light"], blender_ignore=True),
-                
-                    ### mesh ###
+    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light", "aabb", "reference"], blender_ignore=True),
+                       FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
+                       FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
+                       ColorProperty("wireocolor", nodes = ["trimesh", "danglymesh", "skin", "aabb", "reference"]),
+                               ### mesh ###
                     ColorProperty("ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
                     ColorProperty("diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
                     ColorProperty("specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
@@ -419,6 +419,10 @@ class GeometryNodeProperties(NodeProperties):
                     BooleanProperty('lensflares', nodes = ["light"]),            #Possibly causes the light source to produce a lens flare effect,' sounds cool anyway.
                     FloatProperty('flareradius', nodes = ["light"]),
                     BooleanProperty('fadinglight', nodes = ["light"]),        #Unknown. Might activate some kind of distance fall off for the light. Or it could do just about anything.                   
+                    
+                    ### Reference Properties ###
+                    StringProperty('refModel', nodes = ["reference"]),
+                    BooleanProperty('reattachable', nodes = ["reference"]),
                     ]
 
 

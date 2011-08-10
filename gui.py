@@ -161,7 +161,7 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
-            col_flow = box.column_flow(columns=2)
+            col_flow = box.column_flow(columns=1)
             for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
                 if prop.show_in_gui and not prop.blender_ignore:
                     col_flow.prop(props.node_properties, prop.name)

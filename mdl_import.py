@@ -65,7 +65,7 @@ def import_mdl(filename, context):
 def import_geometry(mdl_object, filename, context, objects):
     #create meshes from all nodes
     for node in mdl_object.geometry.nodes:
-        if node.type in ["dummy", "emitter"]:
+        if node.type in ["dummy", "emitter", "reference"]:
             ob = bpy.data.objects.new(node.name, None)
 
             
