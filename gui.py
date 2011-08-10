@@ -157,12 +157,18 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             
             if node_type == "danglymesh":
                 box.label(text = "Dangly Vertex Group:")
-                box.prop_search(props, "danglymesh_vertexgroup" ,obj, "vertex_groups", text = "")
+                box.prop_search(props, "danglymesh_vertexgroup", obj, "vertex_groups", text = "")
             
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
-            col_flow = box.column_flow(columns=1)
-            for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
-                if prop.show_in_gui and not prop.blender_ignore:
-                    col_flow.prop(props.node_properties, prop.name)
+            node_props = basic_props.GeometryNodeProperties.get_node_properties(node_type)
+            gui_prop_groups = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)
+            
+            for name, gui_props in gui_prop_groups.items():
+                prop_box = box.box()
+                col = prop_box.column()
+                col.label(text=name) 
+                for prop in gui_props:
+                    if prop.show_in_gui and not prop.blender_ignore:
+                        col.prop(props.node_properties, prop.name)
             
