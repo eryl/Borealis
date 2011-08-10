@@ -44,13 +44,16 @@ class Property:
     value_written = False
     default_value = None
     show_in_gui = True
-    TAB_SPACE = 2
     gui_group = None
     
-    def __init__(self, name, nodes, blender_ignore = False, default_value = "", show_in_gui = True, gui_group = "default"):
+    def __init__(self, name="", nodes=[], description = "", gui_name = "", 
+                 blender_ignore=False, default_value="", show_in_gui=True, 
+                 gui_group="default"):
         
         self.name = name
         self.nodes = nodes
+        self.description = description
+        self.gui_name = gui_name
         self.blender_ignore = blender_ignore
         self.default_value = default_value
         self.show_in_gui
@@ -64,7 +67,7 @@ class Property:
             print("foo")
     
     def output_values(self):
-        yield " "*self.TAB_SPACE + "%s %s" % (self.name, str(self.value))
+        yield " "*TAB_SPACE + "%s %s" % (self.name, str(self.value))
     
     def __str__(self):
         return "\n".join(line for line in self.output_values())
@@ -96,7 +99,7 @@ class VectorProperty(Property):
         self.value_written = True
     
     def output_values(self):
-        yield " "*self.TAB_SPACE+ "%s %s" % (self.name, " ".join([str(val) for val in self.value]))
+        yield " "*TAB_SPACE+ "%s %s" % (self.name, " ".join([str(val) for val in self.value]))
     
 #matrix properties are properties that have values on multiple rows
 class MatrixProperty(Property):
@@ -134,9 +137,9 @@ class MatrixProperty(Property):
         self.value_written = True
     
     def output_values(self):
-        yield " "*self.TAB_SPACE + "%s %i" % (self.name, len(self.value))
+        yield " "*TAB_SPACE + "%s %i" % (self.name, len(self.value))
         for row in self.value:
-            yield " "*self.TAB_SPACE*2 + " ".join([str(val) for val in row])
+            yield " "*TAB_SPACE*2 + " ".join([str(val) for val in row])
 
 class StringProperty(Property):
     data_type = str
@@ -148,13 +151,13 @@ class BooleanProperty(Property):
         value = "0"
         if self.value:
             value = "1"
-        yield " " * self.TAB_SPACE + "%s %s" % (self.name, value)
+        yield " " * TAB_SPACE + "%s %s" % (self.name, value)
 
 class EnumProperty(Property):
     enums = []
-    def __init__(self, name, nodes, enums, *args, **kwargs):
+    def __init__(self, enums = [], **kwargs):
         self.enums = enums
-        Property.__init__(self, name, nodes, *args, **kwargs);
+        Property.__init__(self, **kwargs);
 
 
 class IntProperty(NumberProperty):
@@ -171,21 +174,21 @@ class FloatProperty(NumberProperty):
     
     def output_values(self):
         # This tidies values, like the max export script seems to do
-        yield " "*self.TAB_SPACE + "%s %.9g" % (self.name, self.value)
+        yield " "*TAB_SPACE + "%s %.9g" % (self.name, self.value)
         
 class FloatVectorProperty(VectorProperty, FloatProperty):
     data_type = float
 
     def output_values(self):
-        yield " "*self.TAB_SPACE+ "%s %s" % (self.name, " ".join(["%.9g" % val for val in self.value]))
+        yield " "*TAB_SPACE+ "%s %s" % (self.name, " ".join(["%.9g" % val for val in self.value]))
         
 class FloatMatrixProperty(MatrixProperty, FloatProperty):
     data_type = float
     
     def output_values(self):
-        yield " "*self.TAB_SPACE + "%s %i" % (self.name, len(self.value))
+        yield " "*TAB_SPACE + "%s %i" % (self.name, len(self.value))
         for row in self.value:
-            yield " "*self.TAB_SPACE*2 + " ".join(["%.9g" % val for val in row])
+            yield " "*TAB_SPACE*2 + " ".join(["%.9g" % val for val in row])
     
 class ColorProperty(FloatVectorProperty):
     data_type = float
@@ -337,124 +340,124 @@ class NodeProperties():
 class GeometryNodeProperties(NodeProperties):
     """ Class for collecting all geometry-node properties
     """
-    props_list = [StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light", "aabb", "reference"], blender_ignore=True),
-                FloatVectorProperty("position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
-                FloatVectorProperty("orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
+    props_list = [StringProperty(name="parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light", "aabb", "reference"], blender_ignore=True),
+                FloatVectorProperty(name="position", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
+                FloatVectorProperty(name="orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
                 
                 ### mesh ###
-                ColorProperty("ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                ColorProperty("diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                ColorProperty("specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                IntProperty("shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                BooleanProperty("shadow", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Render Options"),
-                StringProperty("bitmap", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
-                FloatMatrixProperty("verts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
-                FloatMatrixProperty("tverts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
-                IntMatrixProperty("faces", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
-                FloatProperty("alpha", nodes = ["trimesh", "danglymesh", "skin"]),
-                FloatProperty("scale", nodes = ["trimesh", "danglymesh", "skin"]),
-                ColorProperty("selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"]),
-                BooleanProperty('rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                BooleanProperty('tilefade', nodes = ["trimesh", "danglymesh", "skin"]),
-                BooleanProperty('transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                BooleanProperty('beaming', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                BooleanProperty('inheritcolor', nodes = ["trimesh", "danglymesh", "skin"]),
-                BooleanProperty('center', nodes = ["trimesh", "danglymesh", "skin"]),
-                ColorProperty("wireocolor", nodes = ["trimesh", "danglymesh", "skin", "aabb", "reference"]),
-                BooleanProperty('render', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                ColorProperty('colors', nodes = ["trimesh", "danglymesh", "skin"]),
+                ColorProperty(name="ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                ColorProperty(name="diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                ColorProperty(name="specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                IntProperty(name="shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                BooleanProperty(name="shadow", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Render Options"),
+                StringProperty(name="bitmap", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                FloatMatrixProperty(name="verts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                FloatMatrixProperty(name="tverts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                IntMatrixProperty(name="faces", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
+                FloatProperty(name="alpha", nodes = ["trimesh", "danglymesh", "skin"]),
+                FloatProperty(name="scale", nodes = ["trimesh", "danglymesh", "skin"]),
+                ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"]),
+                BooleanProperty(name='rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
+                BooleanProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"]),
+                BooleanProperty(name='transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
+                BooleanProperty(name='beaming', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
+                BooleanProperty(name='inheritcolor', nodes = ["trimesh", "danglymesh", "skin"]),
+                BooleanProperty(name='center', nodes = ["trimesh", "danglymesh", "skin"]),
+                ColorProperty(name="wireocolor", nodes = ["trimesh", "danglymesh", "skin", "aabb", "reference"]),
+                BooleanProperty(name='render', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
+                ColorProperty(name='colors', nodes = ["trimesh", "danglymesh", "skin"]),
                 
                 ### danglymesh ###
-                FloatProperty("displacement", nodes = ["danglymesh"]),
-                IntProperty("period", nodes = ["danglymesh"]),
-                IntProperty("tightness", nodes = ["danglymesh"]),
-                IntMatrixProperty("constraints", nodes = ["danglymesh"], blender_ignore=True),
+                FloatProperty(name="displacement", nodes = ["danglymesh"]),
+                IntProperty(name="period", nodes = ["danglymesh"]),
+                IntProperty(name="tightness", nodes = ["danglymesh"]),
+                IntMatrixProperty(name="constraints", nodes = ["danglymesh"], blender_ignore=True),
                 
                 ### skin ###
-                MatrixProperty("weights", nodes = ["skin"], blender_ignore=True),
+                MatrixProperty(name="weights", nodes = ["skin"], blender_ignore=True),
                 
                 ### aabb ### 
                 AABBTree("aabb", nodes = ["aabb"], blender_ignore=True),
                 
                 ### Emitter properties ###
-                ColorProperty('colorstart', nodes = ["emitter"]),
-                ColorProperty('colorend', nodes = ["emitter"]),
-                FloatProperty('alphastart', nodes = ["emitter"]), 
-                FloatProperty('alphaend', nodes = ["emitter"]),
-                FloatProperty('sizestart', nodes = ["emitter"]),
-                FloatProperty('sizeend', nodes = ["emitter"]),
-                FloatProperty('sizestart_y', nodes = ["emitter"]),
-                FloatProperty('sizeend_y', nodes = ["emitter"]), 
-                IntProperty('framestart', nodes = ["emitter"]), 
-                IntProperty('frameend', nodes = ["emitter"]), 
-                IntProperty('birthrate', nodes = ["emitter"]), 
-                IntProperty('spawntype', nodes = ["emitter"]),
-                FloatProperty('lifeexp', nodes = ["emitter"]),
-                FloatProperty('mass', nodes = ["emitter"]), 
-                FloatProperty('spread', nodes = ["emitter"]), 
-                FloatProperty('particlerot', nodes = ["emitter"]), 
-                FloatProperty('velocity', nodes = ["emitter"]), 
-                FloatProperty('randvel', nodes = ["emitter"]), 
-                IntProperty('fps', nodes = ["emitter"]),
-                BooleanProperty('random', nodes = ["emitter"]),
-                BooleanProperty('inherit', nodes = ["emitter"]),
-                BooleanProperty('inherit_local', nodes = ["emitter"]),
-                BooleanProperty('inherit_part', nodes = ["emitter"]),
-                BooleanProperty('inheritvel', nodes = ["emitter"]),
-                IntProperty('xsize', nodes = ["emitter"]),
-                IntProperty('ysize', nodes = ["emitter"]),
-                BooleanProperty('bounce', nodes = ["emitter"]),
-                FloatProperty('bounce_co', nodes = ["emitter"]),
-                BooleanProperty('loop', nodes = ["emitter"]),
-                EnumProperty('update', nodes = ["emitter"], enums = ["Fountain"]), #Fountain - Unknown
-                EnumProperty('render', nodes = ["emitter"], enums = ["Normal, Linked, Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
-                EnumProperty('blend', nodes = ["emitter"], enums = ["Normal", "Lighten"]),  # [Normal | lighten]  - Unknown.
-                BooleanProperty('update_sel', nodes = ["emitter"]),
-                BooleanProperty('render_sel', nodes = ["emitter"]),
-                BooleanProperty('blend_sel', nodes = ["emitter"]),
-                FloatProperty('deadspace', nodes = ["emitter"]),
-                FloatProperty('opacity', nodes = ["emitter"]),
-                FloatProperty('blurlength', nodes = ["emitter"]), 
-                FloatProperty('lightningdelay', nodes = ["emitter"]), 
-                FloatProperty('lightningradius', nodes = ["emitter"]), 
-                FloatProperty('lightningscale', nodes = ["emitter"]),
-                FloatProperty('blastradius', nodes = ["emitter"]),
-                FloatProperty('blastlength', nodes = ["emitter"]),
-                BooleanProperty('twosidedtex', nodes = ["emitter"]), 
-                BooleanProperty('p2p', nodes = ["emitter"]), 
-                BooleanProperty('p2p_sel', nodes = ["emitter"]), 
-                EnumProperty('p2p_type', nodes = ["emitter"], enums = ["Bezier", "Gravity"]), #[Bezier|Gravity]
-                FloatProperty('p2p_bezier2', nodes = ["emitter"]), 
-                FloatProperty('p2p_bezier3', nodes = ["emitter"]),
-                FloatProperty('combinetime', nodes = ["emitter"]), 
-                FloatProperty('drag', nodes = ["emitter"]), 
-                FloatProperty('grav', nodes = ["emitter"]), 
-                FloatProperty('threshold', nodes = ["emitter"]),
-                StringProperty('texture', nodes = ["emitter"]),
-                IntProperty('xgrid', nodes = ["emitter"]), 
-                IntProperty('ygrid', nodes = ["emitter"]), 
-                EnumProperty('affectedbywind', nodes = ["emitter"], enums = ['true', 'false']), #[true|false]
-                BooleanProperty('m_istinted', nodes = ["emitter"]), 
-                IntProperty('renderorder', nodes = ["emitter"]), 
-                BooleanProperty('splat', nodes = ["emitter"]), 
+                ColorProperty(name='colorstart', nodes = ["emitter"]),
+                ColorProperty(name='colorend', nodes = ["emitter"]),
+                FloatProperty(name='alphastart', nodes = ["emitter"]), 
+                FloatProperty(name='alphaend', nodes = ["emitter"]),
+                FloatProperty(name='sizestart', nodes = ["emitter"]),
+                FloatProperty(name='sizeend', nodes = ["emitter"]),
+                FloatProperty(name='sizestart_y', nodes = ["emitter"]),
+                FloatProperty(name='sizeend_y', nodes = ["emitter"]), 
+                IntProperty(name='framestart', nodes = ["emitter"]), 
+                IntProperty(name='frameend', nodes = ["emitter"]), 
+                IntProperty(name='birthrate', nodes = ["emitter"]), 
+                IntProperty(name='spawntype', nodes = ["emitter"]),
+                FloatProperty(name='lifeexp', nodes = ["emitter"]),
+                FloatProperty(name='mass', nodes = ["emitter"]), 
+                FloatProperty(name='spread', nodes = ["emitter"]), 
+                FloatProperty(name='particlerot', nodes = ["emitter"]), 
+                FloatProperty(name='velocity', nodes = ["emitter"]), 
+                FloatProperty(name='randvel', nodes = ["emitter"]), 
+                IntProperty(name='fps', nodes = ["emitter"]),
+                BooleanProperty(name='random', nodes = ["emitter"]),
+                BooleanProperty(name='inherit', nodes = ["emitter"]),
+                BooleanProperty(name='inherit_local', nodes = ["emitter"]),
+                BooleanProperty(name='inherit_part', nodes = ["emitter"]),
+                BooleanProperty(name='inheritvel', nodes = ["emitter"]),
+                IntProperty(name='xsize', nodes = ["emitter"]),
+                IntProperty(name='ysize', nodes = ["emitter"]),
+                BooleanProperty(name='bounce', nodes = ["emitter"]),
+                FloatProperty(name='bounce_co', nodes = ["emitter"]),
+                BooleanProperty(name='loop', nodes = ["emitter"]),
+                EnumProperty(name='update', nodes = ["emitter"], enums = ["Fountain"]), #Fountain - Unknown
+                EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal, Linked, Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
+                EnumProperty(name='blend', nodes = ["emitter"], enums = ["Normal", "Lighten"]),  # [Normal | lighten]  - Unknown.
+                BooleanProperty(name='update_sel', nodes = ["emitter"]),
+                BooleanProperty(name='render_sel', nodes = ["emitter"]),
+                BooleanProperty(name='blend_sel', nodes = ["emitter"]),
+                FloatProperty(name='deadspace', nodes = ["emitter"]),
+                FloatProperty(name='opacity', nodes = ["emitter"]),
+                FloatProperty(name='blurlength', nodes = ["emitter"]), 
+                FloatProperty(name='lightningdelay', nodes = ["emitter"]), 
+                FloatProperty(name='lightningradius', nodes = ["emitter"]), 
+                FloatProperty(name='lightningscale', nodes = ["emitter"]),
+                FloatProperty(name='blastradius', nodes = ["emitter"]),
+                FloatProperty(name='blastlength', nodes = ["emitter"]),
+                BooleanProperty(name='twosidedtex', nodes = ["emitter"]), 
+                BooleanProperty(name='p2p', nodes = ["emitter"]), 
+                BooleanProperty(name='p2p_sel', nodes = ["emitter"]), 
+                EnumProperty(name='p2p_type', nodes = ["emitter"], enums = ["Bezier", "Gravity"]), #[Bezier|Gravity]
+                FloatProperty(name='p2p_bezier2', nodes = ["emitter"]), 
+                FloatProperty(name='p2p_bezier3', nodes = ["emitter"]),
+                FloatProperty(name='combinetime', nodes = ["emitter"]), 
+                FloatProperty(name='drag', nodes = ["emitter"]), 
+                FloatProperty(name='grav', nodes = ["emitter"]), 
+                FloatProperty(name='threshold', nodes = ["emitter"]),
+                StringProperty(name='texture', nodes = ["emitter"]),
+                IntProperty(name='xgrid', nodes = ["emitter"]), 
+                IntProperty(name='ygrid', nodes = ["emitter"]), 
+                EnumProperty(name='affectedbywind', nodes = ["emitter"], enums = ['true', 'false']), #[true|false]
+                BooleanProperty(name='m_istinted', nodes = ["emitter"]), 
+                IntProperty(name='renderorder', nodes = ["emitter"]), 
+                BooleanProperty(name='splat', nodes = ["emitter"]), 
                 
                 
                 ### Light properties ###
-                ColorProperty('color', nodes = ["light"], blender_ignore=True),        #The color of the light source.
-                FloatProperty('multiplier', nodes = ["light"]), #Unknown
-                FloatProperty('radius', nodes = ["light"], blender_ignore=True),        #Probably the range of the light.
-                BooleanProperty('ambientonly', nodes = ["light"]),        #This controls if the light is only an ambient lightsource or if it is directional as well.
-                BooleanProperty('isdynamic', nodes = ["light"]),       #Unknown.
-                BooleanProperty('affectdynamic', nodes = ["light"]),        #Unknown.
-                IntProperty('lightpriority', nodes = ["light"]),        #Unknown. I'm not sure what this does,' but a reasonable guess would be it controls when the lightsource casts a shadow. We know that in NWN only the strongest lightsource in an area casts shadows,' this may be the value that determines that. Or it could be a flag of some kind.
-                BooleanProperty('shadow', nodes = ["light"]),        #Probably determines if this light is capable of casting shadows.
-                BooleanProperty('lensflares', nodes = ["light"]),            #Possibly causes the light source to produce a lens flare effect,' sounds cool anyway.
-                FloatProperty('flareradius', nodes = ["light"]),
-                BooleanProperty('fadinglight', nodes = ["light"]),        #Unknown. Might activate some kind of distance fall off for the light. Or it could do just about anything.                   
+                ColorProperty(name='color', nodes = ["light"], blender_ignore=True),        #The color of the light source.
+                FloatProperty(name='multiplier', nodes = ["light"]), #Unknown
+                FloatProperty(name='radius', nodes = ["light"], blender_ignore=True),        #Probably the range of the light.
+                BooleanProperty(name='ambientonly', nodes = ["light"]),        #This controls if the light is only an ambient lightsource or if it is directional as well.
+                BooleanProperty(name='isdynamic', nodes = ["light"]),       #Unknown.
+                BooleanProperty(name='affectdynamic', nodes = ["light"]),        #Unknown.
+                IntProperty(name='lightpriority', nodes = ["light"]),        #Unknown. I'm not sure what this does,' but a reasonable guess would be it controls when the lightsource casts a shadow. We know that in NWN only the strongest lightsource in an area casts shadows,' this may be the value that determines that. Or it could be a flag of some kind.
+                BooleanProperty(name='shadow', nodes = ["light"]),        #Probably determines if this light is capable of casting shadows.
+                BooleanProperty(name='lensflares', nodes = ["light"]),            #Possibly causes the light source to produce a lens flare effect,' sounds cool anyway.
+                FloatProperty(name='flareradius', nodes = ["light"]),
+                BooleanProperty(name='fadinglight', nodes = ["light"]),        #Unknown. Might activate some kind of distance fall off for the light. Or it could do just about anything.                   
                 
                 ### Reference Properties ###
-                StringProperty('refModel', nodes = ["reference"]),
-                BooleanProperty('reattachable', nodes = ["reference"]),
+                StringProperty(name='refModel', nodes = ["reference"]),
+                BooleanProperty(name='reattachable', nodes = ["reference"]),
                 ]
 
 
@@ -465,30 +468,30 @@ class AnimationNodeProperties(NodeProperties):
     """
     
     props_list = [#general properties
-                  StringProperty("parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
-                  FloatMatrixProperty("orientationkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
-                  FloatMatrixProperty("positionkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
+                  StringProperty(name="parent", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"], blender_ignore=True),
+                  FloatMatrixProperty(name="orientationkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
+                  FloatMatrixProperty(name="positionkey", nodes = ["dummy", "trimesh", "danglymesh", "skin", "emitter", "light"]),
                   
                   #emitter properties
-                  FloatMatrixProperty("alphaEndkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("alphaStartkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("alphakey", nodes = ["emitter"]),
-                  FloatMatrixProperty("birthratekey", nodes = ["emitter"]),
-                  FloatMatrixProperty("colorEndkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("colorStartkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("colorkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("fpskey", nodes = ["emitter"]),
-                  FloatMatrixProperty("frameEndkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("frameStartkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("lifeExpkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("masskey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="alphaEndkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="alphaStartkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="alphakey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="birthratekey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="colorEndkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="colorStartkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="colorkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="fpskey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="frameEndkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="frameStartkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="lifeExpkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="masskey", nodes = ["emitter"]),
                 
-                  FloatMatrixProperty("radiuskey", nodes = ["emitter"]),
-                  FloatMatrixProperty("randvelkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("sizeEndkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("sizeStartkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("spreadkey", nodes = ["emitter"]),
-                  FloatMatrixProperty("velocitykey", nodes = ["emitter"]),
-                  FloatMatrixProperty("xsizekey", nodes = ["emitter"]),
-                  FloatMatrixProperty("ysizekey", nodes = ["emitter"])
+                  FloatMatrixProperty(name="radiuskey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="randvelkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="sizeEndkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="sizeStartkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="spreadkey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="velocitykey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="xsizekey", nodes = ["emitter"]),
+                  FloatMatrixProperty(name="ysizekey", nodes = ["emitter"])
                 ]
