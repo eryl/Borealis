@@ -170,5 +170,5 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
                 col.label(text=name) 
                 for prop in gui_props:
                     if prop.show_in_gui and not prop.blender_ignore:
-                        col.prop(props.node_properties, prop.name)
+                        col.prop(props.node_properties, prop.name, text=prop.gui_name)
             

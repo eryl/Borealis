@@ -53,7 +53,10 @@ class Property:
         self.name = name
         self.nodes = nodes
         self.description = description
-        self.gui_name = gui_name
+        if gui_name:
+            self.gui_name = gui_name
+        else:
+            self.gui_name = self.name
         self.blender_ignore = blender_ignore
         self.default_value = default_value
         self.show_in_gui
@@ -356,7 +359,7 @@ class GeometryNodeProperties(NodeProperties):
                 IntMatrixProperty(name="faces", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                 FloatProperty(name="alpha", nodes = ["trimesh", "danglymesh", "skin"]),
                 FloatProperty(name="scale", nodes = ["trimesh", "danglymesh", "skin"]),
-                ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"]),
+                ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"], gui_name="Self illumination color"),
                 BooleanProperty(name='rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
                 BooleanProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"]),
                 BooleanProperty(name='transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
