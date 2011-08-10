@@ -32,6 +32,7 @@ import os
 import bpy
 
 from . import mdl
+from . import blend_props
 
 IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
 DEFAULT_IMG_SIZE = 128
@@ -64,7 +65,7 @@ def import_mdl(filename, context):
 def import_geometry(mdl_object, filename, context, objects):
     #create meshes from all nodes
     for node in mdl_object.geometry.nodes:
-        if node.type == "dummy":
+        if node.type in ["dummy", "emitter"]:
             ob = bpy.data.objects.new(node.name, None)
 
             
@@ -127,17 +128,17 @@ def import_geometry(mdl_object, filename, context, objects):
             lamp_data = bpy.data.lamps.new(node.name + "Lamp", 'POINT')
             ob = bpy.data.objects.new(node.name, lamp_data)
         
-        elif node.type == "emitter":
-            #set up a dummy mesh used as the emitter
-            mesh = bpy.data.meshes.new(node.name + "Mesh")
-            ob = bpy.data.objects.new(node.name, mesh)
-            
-            verts = [[0, 0, 0]]
-            faces = []
-            mesh.from_pydata(verts, [], [])
-            
-            mesh.validate()
-            mesh.update()
+#        elif node.type == "emitter":
+#            #set up a dummy mesh used as the emitter
+#            mesh = bpy.data.meshes.new(node.name + "Mesh")
+#            ob = bpy.data.objects.new(node.name, mesh)
+#            
+#            verts = [[0, 0, 0]]
+#            faces = []
+#            mesh.from_pydata(verts, [], [])
+#            
+#            mesh.validate()
+#            mesh.update()
             
         
         #set up parent, we assume the parent node is already imported
