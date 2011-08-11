@@ -141,9 +141,7 @@ def import_geometry(mdl_object, filename, context, objects):
             lamp_data.color = node['color']
             lamp_data.distance = node['radius']
             lamp_data.use_sphere = True
-            for prop in node.properties.values():
-                print("Prop: %s, value: %s" % (prop.name, prop.value))
-        
+            
 #        elif node.type == "emitter":
 #            #set up a dummy mesh used as the emitter
 #            mesh = bpy.data.meshes.new(node.name + "Mesh")
@@ -159,7 +157,6 @@ def import_geometry(mdl_object, filename, context, objects):
         
         #set up parent, we assume the parent node is already imported
         parent_name = node.get_prop_value("parent")
-        print("Node %s parent name: %s" % (node.name, parent_name))
         try:
             parent_ob = bpy.data.objects[parent_name]
         except KeyError:
@@ -421,6 +418,9 @@ def import_animation(animation, animations_dict, current_frame, context):
         event.update_name(None)
     
     for node in animation.nodes:
+        #Found a model where some parts weren't in the geometry
+        if node.name not in animations_dict:
+            continue
         for property in node.properties.values():
             if not property.value_written:
                 continue

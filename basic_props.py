@@ -48,7 +48,7 @@ class Property:
     
     def __init__(self, name="", nodes=[], description = "", gui_name = "", 
                  blender_ignore=False, default_value=None, show_in_gui=True, 
-                 gui_group="default"):
+                 gui_group="Ungrouped"):
         
         self.name = name
         self.nodes = nodes
@@ -67,7 +67,7 @@ class Property:
     
     def read_value(self, current_line, model_data):
         try:
-            self.value = self.data_type(current_line[1])
+            self.value = self.format_input(current_line[1])
             self.value_written = True
         except:
             print("foo")
@@ -79,8 +79,11 @@ class Property:
         return "\n".join(line for line in self.output_values())
     
     def update_value(self, value):
-        self.value = value
+        self.value = self.format_input(value)
         self.value_written = True
+    
+    def format_input(self, input):
+        return self.data_type(input)
     
 class NumberProperty(Property):
     min = None
@@ -89,7 +92,7 @@ class NumberProperty(Property):
     def __init__(self, min = None, max = None, **kwargs):
         self.min = min
         self.max = max
-        Property.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
 #vector properties are properties that have many values on one row
 class VectorProperty(Property):
@@ -98,14 +101,14 @@ class VectorProperty(Property):
     
     def __init__(self, size = 3, **kwargs):
         self.size = size
-        super().__init__(self, **kwargs)
+        super().__init__(**kwargs)
             
     def read_value(self, current_line, model_data):
-        self.value = [self.data_type(val) for val in current_line[1:]]
+        self.value = [self.format_input(val) for val in current_line[1:]]
         self.value_written = True
     
     def update_value(self, value):
-        self.value = [self.data_type(val) for val in value]
+        self.value = [self.format_input(val) for val in value]
         self.value_written = True
     
     def output_values(self):
@@ -126,14 +129,14 @@ class MatrixProperty(Property):
                     continue
                 if line[0] == "endlist":
                     break
-                self.value.append([self.data_type(value) for value in line])
+                self.value.append([self.format_input(value) for value in line])
         else:
             lines = int(current_line[-1])
             while lines:
                 line = model_data.pop(0)
                 if not line: #skip empty lines
                     continue
-                self.value.append([self.data_type(value) for value in line])
+                self.value.append([self.format_input(value) for value in line])
                 
                 lines -= 1
         
@@ -143,7 +146,7 @@ class MatrixProperty(Property):
         """
         Updates the value of the matrix. value must be a matrix, a sequence of sequences
         """
-        self.value = [[self.data_type(val) for val in row] for row in value]
+        self.value = [[self.format_input(val) for val in row] for row in value]
         self.value_written = True
     
     def output_values(self):
@@ -157,11 +160,12 @@ class StringProperty(Property):
 class BooleanProperty(Property):
     data_type = bool
     
-    def read_value(self, current_line, model_stream):
-        val = int(current_line[1])
-        self.value = (bool(val))
-        self.value_written = True
-        
+    def format_input(self, input):
+        #Ugly, but it makes sure float strings are first cast to int, then bool
+        # It will convert values between (1,1) to False. I had an issue where
+        # a bool value was written as 0.0 in the ascii file
+        return bool(int(float(input)))
+    
     def output_values(self):
         value = "0"
         if self.value:
@@ -199,7 +203,7 @@ class EnumProperty(Property):
             self.enums[name] = output
             self.inverse_enums[output] = name
             
-        Property.__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
     def update_value(self, value):
         # Make sure the value is saved as the name, which is what blender expects
@@ -240,10 +244,16 @@ class EnumProperty(Property):
 class IntProperty(NumberProperty):
     data_type = int
     
-class IntVectorProperty(VectorProperty):
+    def format_input(self, input):
+        # Some export scripts export values that should be integers as floats
+        # and the int constructor won't accept float strings as input,
+        # therefore we first cast the string to a float, then an int
+        return int(float(input))
+    
+class IntVectorProperty(IntProperty, VectorProperty):
     data_type = int
 
-class IntMatrixProperty(MatrixProperty):
+class IntMatrixProperty(IntProperty, MatrixProperty):
     data_type = int
 
 class FloatProperty(NumberProperty):
@@ -253,7 +263,7 @@ class FloatProperty(NumberProperty):
         # This tidies values, like the max export script seems to do
         yield " "*TAB_SPACE + "%s %.9g" % (self.name, self.value)
         
-class FloatVectorProperty(VectorProperty, FloatProperty):
+class FloatVectorProperty(FloatProperty, VectorProperty):
     data_type = float
 
     def output_values(self):
@@ -269,9 +279,7 @@ class FloatMatrixProperty(MatrixProperty, FloatProperty):
     
 class ColorProperty(FloatVectorProperty):
     data_type = float
-    min_value = 0
-    max_value = 1
-
+        
 class AABBTree(MatrixProperty):
     def read_value(self, current_line, model_data):
         def new_node(x1,y1,z1, x2, y2, z2, index, parent = None):
@@ -481,7 +489,7 @@ class GeometryNodeProperties(NodeProperties):
                 BooleanProperty(name='bounce', nodes = ["emitter"]),
                 FloatProperty(name='bounce_co', nodes = ["emitter"]),
                 BooleanProperty(name='loop', nodes = ["emitter"]),
-                EnumProperty(name='update', nodes = ["emitter"], enums = ["Fountain"]), #Fountain - Unknown
+                EnumProperty(name='update', nodes = ["emitter"], enums = ["Fountain", "Single"]),
                 EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal", "Linked", "Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
                 EnumProperty(name='blend', nodes = ["emitter"], enums = ["Normal", "Lighten"]),  # [Normal | lighten]  - Unknown.
                 BooleanProperty(name='update_sel', nodes = ["emitter"]),
