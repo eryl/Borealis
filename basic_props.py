@@ -157,6 +157,11 @@ class StringProperty(Property):
 class BooleanProperty(Property):
     data_type = bool
     
+    def read_value(self, current_line, model_stream):
+        val = int(current_line[1])
+        self.value = (bool(val))
+        self.value_written = True
+        
     def output_values(self):
         value = "0"
         if self.value:
@@ -510,18 +515,18 @@ class GeometryNodeProperties(NodeProperties):
                 
                 
                 ### Light properties ###
+                BooleanProperty(name='ambientonly', nodes = ["light"]),        #This controls if the light is only an ambient lightsource or if it is directional as well.
+                BooleanProperty(name='shadow', nodes = ["light"]),        #Probably determines if this light is capable of casting shadows.
+                BooleanProperty(name='isdynamic', nodes = ["light"]),       #Unknown.
+                BooleanProperty(name='affectdynamic', nodes = ["light"]),        #Unknown.
+                IntProperty(name='lightpriority', nodes = ["light"], min=1, max=5),
+                BooleanProperty(name='fadinglight', nodes = ["light"]),        #Unknown. Might activate some kind of distance fall off for the light. Or it could do just about anything.                   
+                BooleanProperty(name='lensflares', nodes = ["light"]),            #Possibly causes the light source to produce a lens flare effect,' sounds cool anyway.
+                FloatProperty(name='flareradius', nodes = ["light"]),
                 ColorProperty(name='color', nodes = ["light"], blender_ignore=True),        #The color of the light source.
                 FloatProperty(name='multiplier', nodes = ["light"]), #Unknown
                 FloatProperty(name='radius', nodes = ["light"], blender_ignore=True),        #Probably the range of the light.
-                BooleanProperty(name='ambientonly', nodes = ["light"]),        #This controls if the light is only an ambient lightsource or if it is directional as well.
-                BooleanProperty(name='isdynamic', nodes = ["light"]),       #Unknown.
-                BooleanProperty(name='affectdynamic', nodes = ["light"]),        #Unknown.
-                IntProperty(name='lightpriority', nodes = ["light"]),        #Unknown. I'm not sure what this does,' but a reasonable guess would be it controls when the lightsource casts a shadow. We know that in NWN only the strongest lightsource in an area casts shadows,' this may be the value that determines that. Or it could be a flag of some kind.
-                BooleanProperty(name='shadow', nodes = ["light"]),        #Probably determines if this light is capable of casting shadows.
-                BooleanProperty(name='lensflares', nodes = ["light"]),            #Possibly causes the light source to produce a lens flare effect,' sounds cool anyway.
-                FloatProperty(name='flareradius', nodes = ["light"]),
-                BooleanProperty(name='fadinglight', nodes = ["light"]),        #Unknown. Might activate some kind of distance fall off for the light. Or it could do just about anything.                   
-                
+                 
                 ### Reference Properties ###
                 StringProperty(name='refModel', nodes = ["reference"]),
                 BooleanProperty(name='reattachable', nodes = ["reference"]),

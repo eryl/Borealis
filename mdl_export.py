@@ -186,6 +186,9 @@ def export_node(mdl_object, obj, parent, exported_objects):
 
     if node_type in ["trimesh", "skin", "danglymesh", "aabb"]:
         export_mesh(obj, node)
+    elif node_type == "light":
+        node['color'] = obj.data.color[:]
+        node['radius'] = obj.data.distance
 
     exported_objects.append(obj)
     for child in obj.children:

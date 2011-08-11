@@ -53,7 +53,8 @@ def import_mdl(filename, context):
     #bpy.ops.object.mode_set(mode='OBJECT')
     
     import_geometry(mdl_object, filename, context, objects)
-    import_animations(mdl_object, context, objects)
+    if mdl_object.animations:
+        import_animations(mdl_object, context, objects)
     
     #the basic settings for the models are assigned to the active scene object
     scene = context.scene
@@ -137,6 +138,11 @@ def import_geometry(mdl_object, filename, context, objects):
         elif node.type == "light":
             lamp_data = bpy.data.lamps.new(node.name + "Lamp", 'POINT')
             ob = bpy.data.objects.new(node.name, lamp_data)
+            lamp_data.color = node['color']
+            lamp_data.distance = node['radius']
+            lamp_data.use_sphere = True
+            for prop in node.properties.values():
+                print("Prop: %s, value: %s" % (prop.name, prop.value))
         
 #        elif node.type == "emitter":
 #            #set up a dummy mesh used as the emitter
@@ -295,7 +301,7 @@ def import_animations(mdl_object, context, objects):
     """
     Imports all animations in a single action, as a long timestrip
     """
-
+    
     static_poses = {}
     object_paths = {}
     animations_dict = {}
