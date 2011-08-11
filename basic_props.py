@@ -157,12 +157,71 @@ class BooleanProperty(Property):
         yield " " * TAB_SPACE + "%s %s" % (self.name, value)
 
 class EnumProperty(Property):
-    enums = []
-    def __init__(self, enums = [], **kwargs):
-        self.enums = enums
-        Property.__init__(self, **kwargs);
+    """ A property that can only assume a fixed set of values.
+    
+        The values are supplied to the constructor as a list or a dictionary,
+        but will always be stored as a dictionary. The keys are the names of 
+        the enums, while the values are the output in the mdl file.
+        The name is used as values in Blender, while the outputs are used as
+        values in the ascii .mdl file.
+    """
+    enums = {}
+    """ The dictionary which holds the enums in the form {name: output } """
+    inverse_enums = {}
+    """ An inverse dictionary of the enum in the form {output: name} """
+    def __init__(self, enums = {}, **kwargs):
+        """ The constructor takes the enums as a keyword argument. 
+            It can be supplied as a list for compability with how it was
+            handled before. A list will be converted to a dictionary with keys the
+            same as values """
+        self.enums = {}
+        self.inverse_enums = {}
+        
+        if isinstance(enums, list):
+            enums = dict(zip(enums, enums))
+        
+        #this simply makes sure the values are all strings
+        for name, output in enums.items():
+            name = str(name)
+            output = str(output)
+            self.enums[name] = output
+            self.inverse_enums[output] = name
+            
+        Property.__init__(self, **kwargs)
 
+    def update_value(self, value):
+        # Make sure the value is saved as the name, which is what blender expects
+        value = str(value)
+        if value in self.enums:
+            self.value = value
+        elif value in self.inverse_enums:
+            self.value = self.inverse_enums[value]
+        else:
+            raise ValueError("Not a valid Enum: %s for %s" % (value, self.name))
+        self.value_written = True
 
+    def read_value(self, current_line, model_data):
+        val = str(current_line[1])
+        print("Enum %s reading value %s" % (self.name, val))
+        if val in self.enums:
+            self.value = val
+        elif val in self.inverse_enums:
+            self.value = self.inverse_enums[val]
+        else:
+            print(self.enums)
+            print(self.inverse_enums)
+            raise ValueError("Not a valid Enum: %s for %s" % (val, self.name))
+        print("Enum %s value set to %s" % (self.name, self.value))
+        
+        self.value_written = True
+        
+    def output_values(self):
+        if self.value in self.enums:
+            val = self.enums[self.value]
+        else:
+            val = self.value
+        yield " " * TAB_SPACE + "%s %s" % (self.name, val)
+        
 class IntProperty(NumberProperty):
     data_type = int
     
@@ -236,9 +295,6 @@ class AABBTree(MatrixProperty):
         self.value_written = True
     
     def update_value(self, value):
-        """
-        Updates the value of the matrix. value must be a matrix, a sequence of sequences
-        """
         self.value = value
         self.value_written = True
     
@@ -270,7 +326,6 @@ class AABBTree(MatrixProperty):
             if left:
                 node_stack.append((level+1, current_node["left"],))
             
-
     
 class NodeProperties():
     node_types = None
@@ -311,7 +366,6 @@ class NodeProperties():
         if not cls.props_dict:
             cls.build_dictionary()
         cls.node_types = cls.props_dict.keys()
-    
     
     @classmethod
     def get_gui_groups(cls):
@@ -361,7 +415,7 @@ class GeometryNodeProperties(NodeProperties):
                 FloatProperty(name="scale", nodes = ["trimesh", "danglymesh", "skin"]),
                 ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"], gui_name="Self illumination color"),
                 BooleanProperty(name='rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                BooleanProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"]),
+                EnumProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"], enums = {"Don't fade": 0, "Fade": 1, "Neighbour": 2, "Base": 4}),
                 BooleanProperty(name='transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
                 BooleanProperty(name='beaming', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
                 BooleanProperty(name='inheritcolor', nodes = ["trimesh", "danglymesh", "skin"]),
@@ -462,7 +516,6 @@ class GeometryNodeProperties(NodeProperties):
                 StringProperty(name='refModel', nodes = ["reference"]),
                 BooleanProperty(name='reattachable', nodes = ["reference"]),
                 ]
-
 
                 
 class AnimationNodeProperties(NodeProperties):

@@ -161,7 +161,6 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
-            node_props = basic_props.GeometryNodeProperties.get_node_properties(node_type)
             gui_prop_groups = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)
             
             for name, gui_props in gui_prop_groups.items():

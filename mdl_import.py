@@ -195,11 +195,12 @@ def import_geometry(mdl_object, filename, context, objects):
         props.nwn_node_type  = node.type    
         props.is_nwn_object = True
         
-        for prop in node.properties.values():
+        for prop_name, prop in node.properties.items():
             if prop.blender_ignore or not prop.value_written:
                 continue
-            props.node_properties[prop.name] = prop.value
-
+            
+            exec("props.node_properties.%s = prop.value" % prop_name)
+                
 def import_aabb(ob, node):
     """ Imports the aabb data of a node as mesh objects """
     def recursive_aabb(current_node, parent_ob):

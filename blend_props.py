@@ -78,6 +78,9 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
     for node_type in node_types:
         props.extend(basic_props.GeometryNodeProperties.get_node_properties(node_type))
     
+    props = set(props)
+    
+    print(sorted([prop.name for prop in props]))
     #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
     for prop in props:
         if  prop.blender_ignore:
@@ -102,7 +105,8 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
             attribute_dict["properties"].append(prop)
             
         elif isinstance(prop, basic_props.EnumProperty):
-            items = [(name, name, name) for name in prop.enums]
+            items = [(name, name, name) for name,output in prop.enums.items()]
+            print("adding enum with name: %s" % prop.name)
             attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
                                                                items = items)
             attribute_dict["properties"].append(prop)
