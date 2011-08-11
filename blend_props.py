@@ -77,15 +77,27 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
     props = []
     for node_type in node_types:
         props.extend(basic_props.GeometryNodeProperties.get_node_properties(node_type))
-    
     props = set(props)
     
-    print(sorted([prop.name for prop in props]))
     #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
     for prop in props:
         if  prop.blender_ignore:
             continue
-        
+        kwargs = {}
+        kwargs["name"] = prop.name
+        if prop.get_default_value():
+            kwargs["default"] = prop.get_default_value()
+            
+        if isinstance(prop, basic_props.NumberProperty):
+            if prop.max:
+                kwargs["max"] = prop.max
+            if prop.min:
+                kwargs["min"] = prop.min
+                
+        if isinstance(prop, basic_props.VectorProperty):
+            if prop.size:
+                kwargs["size"] = prop.size
+
         ##The order of the cases are important since some properties are subtypes of other
         if isinstance(prop, basic_props.ColorProperty):
             attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
@@ -93,30 +105,29 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.StringProperty):
-            attribute_dict[prop.name] = bpy.props.StringProperty(name = prop.name)
+            attribute_dict[prop.name] = bpy.props.StringProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.FloatVectorProperty):
-            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3)
+            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(size = 3, **kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.BooleanProperty):
-            attribute_dict[prop.name] = bpy.props.BoolProperty(name = prop.name)
+            attribute_dict[prop.name] = bpy.props.BoolProperty(**kwargs)
             attribute_dict["properties"].append(prop)
             
         elif isinstance(prop, basic_props.EnumProperty):
-            items = [(name, name, name) for name,output in prop.enums.items()]
-            print("adding enum with name: %s" % prop.name)
-            attribute_dict[prop.name] = bpy.props.EnumProperty(name = prop.name, 
-                                                               items = items)
+            items = prop.get_blender_items()
+            kwargs["items"] = items
+            attribute_dict[prop.name] = bpy.props.EnumProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.IntProperty):
-            attribute_dict[prop.name] = bpy.props.IntProperty(name = prop.name)
+            attribute_dict[prop.name] = bpy.props.IntProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.FloatProperty):
-            attribute_dict[prop.name] = bpy.props.FloatProperty(name = prop.name)
+            attribute_dict[prop.name] = bpy.props.FloatProperty(**kwargs)
             attribute_dict["properties"].append(prop)
 
         if prop.name not in attribute_dict:

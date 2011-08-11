@@ -47,7 +47,7 @@ class Property:
     gui_group = None
     
     def __init__(self, name="", nodes=[], description = "", gui_name = "", 
-                 blender_ignore=False, default_value="", show_in_gui=True, 
+                 blender_ignore=False, default_value=None, show_in_gui=True, 
                  gui_group="default"):
         
         self.name = name
@@ -62,6 +62,9 @@ class Property:
         self.show_in_gui
         self.gui_group = gui_group
         
+    def get_default_value(self):
+        return self.default_value
+    
     def read_value(self, current_line, model_data):
         try:
             self.value = self.data_type(current_line[1])
@@ -80,19 +83,23 @@ class Property:
         self.value_written = True
     
 class NumberProperty(Property):
-    min_value = None
-    max_value = None
-    default_value = None
-    def __init__(self, default_value = 0, min_value = 0, max_value = 1, **kwargs):
-        self.min_value = min_value
-        self.max_value = max_value
-        self.default_value = 0
+    min = None
+    max = None
+    
+    def __init__(self, min = None, max = None, **kwargs):
+        self.min = min
+        self.max = max
         Property.__init__(self, **kwargs)
 
 #vector properties are properties that have many values on one row
 class VectorProperty(Property):
     data_type = str
+    size = None
     
+    def __init__(self, size = 3, **kwargs):
+        self.size = size
+        super().__init__(self, **kwargs)
+            
     def read_value(self, current_line, model_data):
         self.value = [self.data_type(val) for val in current_line[1:]]
         self.value_written = True
@@ -221,7 +228,10 @@ class EnumProperty(Property):
         else:
             val = self.value
         yield " " * TAB_SPACE + "%s %s" % (self.name, val)
-        
+    
+    def get_blender_items(self):
+        return [(name, name, name) for name, output in self.enums.items()]
+
 class IntProperty(NumberProperty):
     data_type = int
     
@@ -422,7 +432,7 @@ class GeometryNodeProperties(NodeProperties):
                 BooleanProperty(name='center', nodes = ["trimesh", "danglymesh", "skin"]),
                 ColorProperty(name="wireocolor", nodes = ["trimesh", "danglymesh", "skin", "aabb", "reference"]),
                 BooleanProperty(name='render', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                ColorProperty(name='colors', nodes = ["trimesh", "danglymesh", "skin"]),
+                FloatMatrixProperty(name='colors', nodes = ["trimesh", "danglymesh", "skin"], blender_ignore = True),
                 
                 ### danglymesh ###
                 FloatProperty(name="displacement", nodes = ["danglymesh"]),
@@ -467,7 +477,7 @@ class GeometryNodeProperties(NodeProperties):
                 FloatProperty(name='bounce_co', nodes = ["emitter"]),
                 BooleanProperty(name='loop', nodes = ["emitter"]),
                 EnumProperty(name='update', nodes = ["emitter"], enums = ["Fountain"]), #Fountain - Unknown
-                EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal, Linked, Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
+                EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal", "Linked", "Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
                 EnumProperty(name='blend', nodes = ["emitter"], enums = ["Normal", "Lighten"]),  # [Normal | lighten]  - Unknown.
                 BooleanProperty(name='update_sel', nodes = ["emitter"]),
                 BooleanProperty(name='render_sel', nodes = ["emitter"]),
