@@ -115,7 +115,8 @@ def export_nwn_mdl(context, use_root_name = True,
                 export_animations - Whether to export animations or not. True
                     to export animations, False to only export geometry
     """
-    
+    #We assume the first frame contains the static pose and change frame accordingly
+    context.scene.frame_current = 1
     scene_props = context.scene.nwn_props
     root_object = context.scene.objects[scene_props.root_object_name]
     
