@@ -345,8 +345,7 @@ class Animation:
                 
             elif current_line[0] == "event":
                 self.events.append((float(current_line[1]), current_line[2]))
-                print(self.events[-1])
-            
+                
             elif current_line[0] == "node":
                 node_type = current_line[1]
                 node_name = current_line[2]

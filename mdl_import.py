@@ -38,7 +38,7 @@ from . import basic_props
 IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
 DEFAULT_IMG_SIZE = 128
 
-def import_mdl(filename, context):
+def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     """
     Imports a Neverwinter Nights model
     """
@@ -52,9 +52,12 @@ def import_mdl(filename, context):
     #Theres a bug here; if there are no objects in the scene we can't set the mode to OBJECT
     #bpy.ops.object.mode_set(mode='OBJECT')
     
-    import_geometry(mdl_object, filename, context, objects)
+    import_geometry(mdl_object, filename, context, objects, 
+                    enforce_lowercase_names = enforce_lowercase_names, **kwargs)
     if mdl_object.animations:
-        import_animations(mdl_object, context, objects)
+        import_animations(mdl_object, context, objects, 
+                          enforce_lowercase_names = enforce_lowercase_names, 
+                          **kwargs)
     
     #the basic settings for the models are assigned to the active scene object
     scene = context.scene
@@ -64,16 +67,20 @@ def import_mdl(filename, context):
     scene.nwn_props.supermodel = mdl_object.supermodel
     scene.nwn_props.animationscale = float(mdl_object.setanimationscale)
 
-def import_geometry(mdl_object, filename, context, objects):
+def import_geometry(mdl_object, filename, context, objects, enforce_lowercase_names = True, **kwargs):
     #create meshes from all nodes
     for node in mdl_object.geometry.nodes:
+        if enforce_lowercase_names:
+            node_name = node.name.lower()
+        else:
+            node_name = node.name
         if node.type in ["dummy", "emitter", "reference"]:
-            ob = bpy.data.objects.new(node.name, None)
+            ob = bpy.data.objects.new(node_name, None)
 
             
         elif node.type in ["trimesh", "danglymesh", "skin", "aabb"]:
-            mesh = bpy.data.meshes.new(node.name + "Mesh")
-            ob = bpy.data.objects.new(node.name, mesh)
+            mesh = bpy.data.meshes.new(node_name + "Mesh")
+            ob = bpy.data.objects.new(node_name, mesh)
             
             ### set up geometry ###
             
@@ -136,16 +143,16 @@ def import_geometry(mdl_object, filename, context, objects):
 #                import_aabb(ob, node)
                 
         elif node.type == "light":
-            lamp_data = bpy.data.lamps.new(node.name + "Lamp", 'POINT')
-            ob = bpy.data.objects.new(node.name, lamp_data)
+            lamp_data = bpy.data.lamps.new(node_name + "Lamp", 'POINT')
+            ob = bpy.data.objects.new(node_name, lamp_data)
             lamp_data.color = node['color']
             lamp_data.distance = node['radius']
             lamp_data.use_sphere = True
             
 #        elif node.type == "emitter":
 #            #set up a dummy mesh used as the emitter
-#            mesh = bpy.data.meshes.new(node.name + "Mesh")
-#            ob = bpy.data.objects.new(node.name, mesh)
+#            mesh = bpy.data.meshes.new(node_name + "Mesh")
+#            ob = bpy.data.objects.new(node_name, mesh)
 #            
 #            verts = [[0, 0, 0]]
 #            faces = []
@@ -156,7 +163,10 @@ def import_geometry(mdl_object, filename, context, objects):
             
         
         #set up parent, we assume the parent node is already imported
-        parent_name = node.get_prop_value("parent")
+        if (enforce_lowercase_names):
+            parent_name = node.get_prop_value("parent").lower()
+        else:
+            parent_name = node.get_prop_value("parent")
         try:
             parent_ob = bpy.data.objects[parent_name]
         except KeyError:
@@ -201,7 +211,6 @@ def import_geometry(mdl_object, filename, context, objects):
         for prop_name, prop in node.properties.items():
             if prop.blender_ignore or not prop.value_written:
                 continue
-            
             exec("props.node_properties.%s = prop.value" % prop_name)
                 
 def import_aabb(ob, node):
@@ -294,7 +303,7 @@ def setup_texture(mesh, node, filename):
         faces[face].material_index = mesh.materials.keys().index(mat_name)
 
     
-def import_animations(mdl_object, context, objects):
+def import_animations(mdl_object, context, objects, **kwargs):
     """
     Imports all animations in a single action, as a long timestrip
     """
@@ -339,7 +348,7 @@ def import_animations(mdl_object, context, objects):
         current_frame = set_static_frame(static_poses, animations_dict, current_frame)
         current_frame += 1
         #import animation
-        current_frame = import_animation(animation, animations_dict, current_frame, context)
+        current_frame = import_animation(animation, animations_dict, current_frame, context, **kwargs)
         current_frame += 1
         #set the static frame after the animation
         current_frame = set_static_frame(static_poses, animations_dict, current_frame)
@@ -386,7 +395,8 @@ def set_static_frame(static_poses, animations_dict, current_frame):
     
     return current_frame
 
-def import_animation(animation, animations_dict, current_frame, context):
+def import_animation(animation, animations_dict, current_frame, 
+                     context, enforce_lowercase_names = True):
     """
     Parses a single animation and inserts channel data in animations_dict. 
     Returns the frame number of the last frame in the animation
@@ -418,8 +428,12 @@ def import_animation(animation, animations_dict, current_frame, context):
         event.update_name(None)
     
     for node in animation.nodes:
+        if enforce_lowercase_names:
+            node_name = node.name.lower()
+        else:
+            node_name = node.name
         #Found a model where some parts weren't in the geometry
-        if node.name not in animations_dict:
+        if node_name not in animations_dict:
             continue
         for property in node.properties.values():
             if not property.value_written:
@@ -428,19 +442,19 @@ def import_animation(animation, animations_dict, current_frame, context):
                 for time, x, y, z in property.value:
                     key_frame = time * fps + start_frame
 #                        print("adding position key to frame %i" % key_frame)
-                    animations_dict[node.name]['location']['x'].append((key_frame, x))
-                    animations_dict[node.name]['location']['y'].append((key_frame, y))
-                    animations_dict[node.name]['location']['z'].append((key_frame, z))
+                    animations_dict[node_name]['location']['x'].append((key_frame, x))
+                    animations_dict[node_name]['location']['y'].append((key_frame, y))
+                    animations_dict[node_name]['location']['z'].append((key_frame, z))
                     
             elif property.name == "orientationkey":
                 for time, x, y, z, w in property.value:
                     key_frame = time * fps + start_frame
                     
 #                        print("adding orientation key to frame %i" % key_frame)
-                    animations_dict[node.name]['rotation_axis_angle']['w'].append((key_frame, w))
-                    animations_dict[node.name]['rotation_axis_angle']['x'].append((key_frame, x))
-                    animations_dict[node.name]['rotation_axis_angle']['y'].append((key_frame, y))
-                    animations_dict[node.name]['rotation_axis_angle']['z'].append((key_frame, z))
+                    animations_dict[node_name]['rotation_axis_angle']['w'].append((key_frame, w))
+                    animations_dict[node_name]['rotation_axis_angle']['x'].append((key_frame, x))
+                    animations_dict[node_name]['rotation_axis_angle']['y'].append((key_frame, y))
+                    animations_dict[node_name]['rotation_axis_angle']['z'].append((key_frame, z))
     return end_frame
     
 

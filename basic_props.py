@@ -490,8 +490,8 @@ class GeometryNodeProperties(NodeProperties):
                 FloatProperty(name='bounce_co', nodes = ["emitter"]),
                 BooleanProperty(name='loop', nodes = ["emitter"]),
                 EnumProperty(name='update', nodes = ["emitter"], enums = ["Fountain", "Single"]),
-                EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal", "Linked", "Motion_blur"]), #[Normal | linked | Motion_blur]  - Unknown. Probably controls how the particles are drawn in some way.
-                EnumProperty(name='blend', nodes = ["emitter"], enums = ["Normal", "Lighten"]),  # [Normal | lighten]  - Unknown.
+                EnumProperty(name='render', nodes = ["emitter"], enums = ["Normal", "Linked", "Motion_blur"]),
+                EnumProperty(name='blend', nodes = ["emitter"], enums = {"normal": "Normal", "lighten": "Lighten", "diffuse": "Diffuse"}),  
                 BooleanProperty(name='update_sel', nodes = ["emitter"]),
                 BooleanProperty(name='render_sel', nodes = ["emitter"]),
                 BooleanProperty(name='blend_sel', nodes = ["emitter"]),
