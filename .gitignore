@@ -3,3 +3,6 @@
 *.tga
 *.dds
 *.wok
+.project
+.pydevproject
+.settings
