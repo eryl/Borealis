@@ -376,7 +376,6 @@ def recursive_aabb(facelist, parent, level):
         raise RuntimeError("Max recursion depth reached when building aabb "
                            "tree. Look for duplicate faces.")
         
-    
     bottom_left = Vector((10000,10000,10000))
     top_right = Vector((-10000,-10000,-10000))
     midpoints = Vector((0,0,0))

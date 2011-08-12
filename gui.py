@@ -163,13 +163,17 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
                 #box.operator("object.nwn_remove_walkmesh_materials")
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
-            gui_prop_groups = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)
+            gui_group_root = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)
             
-            for name, gui_props in gui_prop_groups.items():
-                prop_box = box.box()
-                col = prop_box.column()
-                col.label(text=name) 
-                for prop in gui_props:
+            def layout_groups(name, props_, subgroups, parent_box):
+                box = parent_box.box()
+                box.label(name)
+                for prop in props_:
                     if prop.show_in_gui and not prop.blender_ignore:
-                        col.prop(props.node_properties, prop.name, text=prop.gui_name)
+                        box.prop(props.node_properties, prop.name, 
+                                 text=prop.gui_name)
+                for name, dict in subgroups.items():
+                    layout_groups(name, dict["props"], dict["subgroups"], box)
             
+            for name, dict in gui_group_root["subgroups"].items():
+                layout_groups(name, dict["props"], dict["subgroups"], box)

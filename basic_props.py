@@ -59,7 +59,10 @@ class Property:
             self.gui_name = self.name
         self.blender_ignore = blender_ignore
         self.default_value = default_value
-        self.show_in_gui
+        if blender_ignore:
+            self.show_in_gui = False
+        else:
+            self.show_in_gui = show_in_gui
         self.gui_group = gui_group
         
     def get_default_value(self):
@@ -402,17 +405,34 @@ class NodeProperties():
     @classmethod
     def get_node_gui_groups(cls, node_type):
         if not cls.node_gui_groups:
-            cls.node_gui_groups = {}
-            for node_type_ in cls.get_node_types():
-                group_dict = {}
-                for prop in cls.get_node_properties(node_type_):
-                    if prop.gui_group not in group_dict:
-                        group_dict[prop.gui_group] = []
-                    group_dict[prop.gui_group].append(prop)
-                cls.node_gui_groups[node_type_] = group_dict
+            cls.build_node_gui_groups()
         return cls.node_gui_groups[node_type]
-            
     
+    @classmethod
+    def build_node_gui_groups(cls):
+        cls.node_gui_groups = {}
+        for node_type in cls.get_node_types():
+            props = []
+            group_dict = {"props": props, "subgroups": {}}
+            for prop in cls.get_node_properties(node_type):
+                if isinstance(prop.gui_group, list):
+                    #if the gui_group attribute is a list, the prop is in a nested group
+                    groups = prop.gui_group[:]
+                    current_group = group_dict
+                    while(groups):
+                        subgroup = groups.pop(0)
+                        if subgroup not in current_group["subgroups"]:
+                            current_group["subgroups"][subgroup] = {"props": [], "subgroups": {}}
+                        current_group = current_group["subgroups"][subgroup]
+                    if prop not in current_group["props"]:
+                        current_group["props"].append(prop)
+                else:
+                    #If gui_group is not a list, the prop is in the first level
+                    if prop.gui_group not in group_dict["subgroups"]:
+                        group_dict["subgroups"][prop.gui_group] = {"props": [], "subgroups": {}}
+                    group_dict["subgroups"][prop.gui_group]["props"].append(prop)
+            cls.node_gui_groups[node_type] = group_dict
+            
 class GeometryNodeProperties(NodeProperties):
     """ Class for collecting all geometry-node properties
     """
@@ -421,9 +441,9 @@ class GeometryNodeProperties(NodeProperties):
                 FloatVectorProperty(name="orientation", nodes = ["dummy", "trimesh", "danglymesh", "skin", "aabb", "emitter", "light", "reference"], blender_ignore=True),
                 
                 ### mesh ###
-                ColorProperty(name="ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings"),
-                ColorProperty(name="diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings"),
-                ColorProperty(name="specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings"),
+                ColorProperty(name="ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
+                ColorProperty(name="diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
+                ColorProperty(name="specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
                 IntProperty(name="shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings"),
                 FloatProperty(name="alpha", nodes = ["trimesh", "danglymesh", "skin"], gui_group="Material settings"),
                 ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"], gui_name="Self illumination color", gui_group="Material settings"),
