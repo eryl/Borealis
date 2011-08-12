@@ -50,11 +50,11 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
     """
     
     bl_idname = "export_mesh.nwn_mdl"
-    bl_label = "Export NWN mdl"
+    bl_label = "Export NWN .mdl"
 
     filepath = bpy.props.StringProperty(name="File Path",
                           description="File path used for exporting "
-                                      "the active object to STL file",
+                                      "the NWN model",
                           maxlen=1024,
                           default="")
     filename_ext = ".mdl"
@@ -62,15 +62,15 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
 
     use_root_name = BoolProperty(name="Use Root Object Name", 
                                  description=
-                                 ("Use the name of the root object" +  
-                                 "as the model name and filename like " +
-                                 "Neverwinter Nights expects, if false the " +
-                                 "filename will be used as the model name in" +
+                                 ("Use the name of the root object "    
+                                 "as the model name and filename like " 
+                                 "Neverwinter Nights expects, if false the "
+                                 "filename will be used as the model name in"
                                  " the model file" )
                                  ,default=True)
     do_export_animations = BoolProperty(name="Export Animations", 
                                      description="Toggle whether animations "
-                                     +"should be exported or not"
+                                     "should be exported or not"
                                      , default=True) 
     
     

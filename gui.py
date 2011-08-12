@@ -158,7 +158,9 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             if node_type == "danglymesh":
                 box.label(text = "Dangly Vertex Group:")
                 box.prop_search(props, "danglymesh_vertexgroup", obj, "vertex_groups", text = "")
-            
+            elif node_type == "aabb":
+                box.operator("object.nwn_add_walkmesh_materials")
+                #box.operator("object.nwn_remove_walkmesh_materials")
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
             gui_prop_groups = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)

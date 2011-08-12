@@ -31,6 +31,7 @@ import mathutils
 from mathutils import Color
 
 from . import basic_props
+from . import blend_props
 
 
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
@@ -210,19 +211,37 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
         
         return {'FINISHED'}
     
-#class OBJECT_OT_create_walkmesh_materials(bpy.types.Operator):
-#    bl_idname ="object.create_walkmesh_materials"
-#    bl_label = "Create Walkmesh materials"
-#    bl_description = "Creates walkmesh materials for the selected mesh"
-#    
-#    
-#    @classmethod
-#    def poll(cls, context):
-#        return True
-#    
-#    def execute(self, context):
-#        return {'FINISHED'}
-#    
-#    def invoke(self, context, event):
-#       
+class OBJECT_OT_create_walkmesh_materials(bpy.types.Operator):
+    bl_idname ="object.nwn_add_walkmesh_materials"
+    bl_label = "Add Walkmesh materials"
+    bl_description = "Adds walkmesh materials for the selected mesh object"
     
+    
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        if obj:
+            return obj.type == 'MESH'
+        return False
+    
+    def execute(self, context):
+        blend_props.create_walkmesh_materials(context.object)
+        return {'FINISHED'}
+          
+    
+class OBJECT_OT_nwn_remove_walkmesh_materials(bpy.types.Operator):
+    bl_idname ="object.nwn_remove_walkmesh_materials"
+    bl_label = "Remove Walkmesh materials"
+    bl_description = "Removes walkmesh materials for the selected mesh object"
+    
+    
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        if obj:
+            return obj.type == 'MESH'
+        return False
+    
+    def execute(self, context):
+        blend_props.remove_walkmesh_materials(context.object)
+        return {'FINISHED'}

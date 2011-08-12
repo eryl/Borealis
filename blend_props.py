@@ -67,7 +67,13 @@ def create_walkmesh_materials(ob):
             mat = bpy.data.materials[material["name"]]
         if mat.name not in ob.data.materials: 
             ob.data.materials.append(mat)
-        
+
+def remove_walkmesh_materials(ob):
+    for i, mat in enumerate(basic_props.walkmesh_materials):
+        if mat["name"] in ob.data.materials:
+            index = ob.data.materials.keys().index(mat["name"]) 
+            ob.data.materials.pop(index)
+
 def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
     #We create a dynamic class to use for node properties 
     attribute_dict = {"bl_idname": classname, 
@@ -162,6 +168,12 @@ class BorealisMeshSettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
     """
+    def node_update(self, context):
+        print(self.nwn_node_type)
+        print(context.object.data.nwn_props.nwn_node_type)
+        if self.nwn_node_type == "aabb":
+            create_walkmesh_materials(context.object)
+        
     node_types = ["trimesh", "danglymesh", "skin", "aabb"]
     nwn_node_type = bpy.props.EnumProperty(items = [(t, t, t) for t in node_types],
                                        name = "Node Type",
@@ -171,7 +183,7 @@ class BorealisMeshSettings(bpy.types.PropertyGroup):
                                    description="Toggles whether this object is an nwn object and should be included in exports", 
                                    default=False)
     
-    danglymesh_vertexgroup = bpy.props.StringProperty(name = "Dangle Mesh vertex group")
+    danglymesh_vertexgroup = bpy.props.StringProperty(name="Dangle Mesh vertex group")
     
     @classmethod
     def register(cls):
