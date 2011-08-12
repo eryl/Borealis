@@ -168,12 +168,6 @@ class BorealisMeshSettings(bpy.types.PropertyGroup):
     """
     Properties specific for the nwn models, gets attached to all objects.
     """
-    def node_update(self, context):
-        print(self.nwn_node_type)
-        print(context.object.data.nwn_props.nwn_node_type)
-        if self.nwn_node_type == "aabb":
-            create_walkmesh_materials(context.object)
-        
     node_types = ["trimesh", "danglymesh", "skin", "aabb"]
     nwn_node_type = bpy.props.EnumProperty(items = [(t, t, t) for t in node_types],
                                        name = "Node Type",
@@ -265,10 +259,6 @@ class Animation(bpy.types.PropertyGroup):
     end_frame = property(get_end_frame, set_end_frame)
     start_frame = property(get_start_frame, set_start_frame)
 
-class WalkmeshColor(bpy.types.PropertyGroup):
-    color = bpy.props.FloatVectorProperty(name = "Color", subtype = 'COLOR')
-    type = bpy.props.StringProperty(name = "Surface type") 
-    
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
                                                      ("character","Character","character"),
@@ -278,11 +268,10 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
                                             name = "Classification",
                                             description = "The classification of the current model")
     supermodel = bpy.props.StringProperty(name = "Supermodel")
-    animationscale = bpy.props.FloatProperty(name = "Animation Scale")
+    animationscale = bpy.props.FloatProperty(name = "Animation Scale", min=0, max=1000, default=1)
     root_object_name = bpy.props.StringProperty(name = "Root object name")
     animations = bpy.props.CollectionProperty(type=Animation)
     animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")    
-    walkmesh_colors = bpy.props.CollectionProperty(type=WalkmeshColor)
     
 
        

@@ -213,21 +213,17 @@ class EnumProperty(Property):
         elif value in self.inverse_enums:
             self.value = self.inverse_enums[value]
         else:
-            raise ValueError("Not a valid Enum: %s for %s" % (value, self.name))
+            raise ValueError("Not a valid Enum: %s for %s, valid enums: %s" % (val, self.name, self.enums))
         self.value_written = True
 
     def read_value(self, current_line, model_data):
         val = str(current_line[1])
-        print("Enum %s reading value %s" % (self.name, val))
         if val in self.enums:
             self.value = val
         elif val in self.inverse_enums:
             self.value = self.inverse_enums[val]
         else:
-            print(self.enums)
-            print(self.inverse_enums)
-            raise ValueError("Not a valid Enum: %s for %s" % (val, self.name))
-        print("Enum %s value set to %s" % (self.name, self.value))
+            raise ValueError("Not a valid Enum: %s for %s, valid enums: %s" % (val, self.name, self.enums))
         
         self.value_written = True
         

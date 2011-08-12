@@ -72,7 +72,12 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
                                      description="Toggle whether animations "
                                      "should be exported or not"
                                      , default=True) 
-    
+    force_tris = BoolProperty(name="Autotriangulate quad faces", 
+                                       description="Automatically convert quad"
+                                       " faces to tris. The export will fail"
+                                       " if this is unchecked and there are"
+                                       " quad faces in any mesh",
+                                       default=True)
     
     @classmethod
     def poll(cls, context):
@@ -91,7 +96,8 @@ class BorealisExport(bpy.types.Operator, ExportHelper):
         
 
 def export_nwn_mdl(context, use_root_name = True, 
-                   do_export_animations = True, **kwargs):
+                   do_export_animations = True, 
+                   **kwargs):
     """ Exports an Object tree into a nwn mdl.
     
             Initiates the export of the Blender Object tree into a 
@@ -133,15 +139,19 @@ def export_nwn_mdl(context, use_root_name = True,
     
     mdl_object = mdl.Model(model_name)
     mdl_object.classification = scene_props.classification
-    mdl_object.supermodel = scene_props.supermodel
+    if scene_props.supermodel:
+        mdl_object.supermodel = scene_props.supermodel
+    else:
+        mdl_object.supermodel = "NULL"
     mdl_object.setanimationscale =  scene_props.animationscale
     
     #this will act as an accumulator, containing the exported objects
     exported_objects = []
-    export_geometry(mdl_object, root_object, exported_objects)
+    export_geometry(mdl_object, root_object, exported_objects, **kwargs)
     
     if do_export_animations:
-        export_animations(context.scene, mdl_object, root_object, exported_objects)
+        export_animations(context.scene, mdl_object, root_object, 
+                          exported_objects, **kwargs)
     
 #    if os.path.exists(kwargs['filepath']):
 #        print("Path exists")
@@ -152,17 +162,17 @@ def export_nwn_mdl(context, use_root_name = True,
     
     return {'FINISHED'}
 
-def export_geometry(mdl_object, obj, exported_objects):
+def export_geometry(mdl_object, obj, exported_objects, **kwargs):
     """ Export the root Object as the mdl root node """
     node = mdl_object.new_geometry_node("dummy", obj.name)
     node['parent'] = "NULL"
     exported_objects.append(obj)
     for child in obj.children:
         if blend_props.get_nwn_props(child).is_nwn_object:
-            export_node(mdl_object, child, obj.name, exported_objects)
+            export_node(mdl_object, child, obj.name, exported_objects, **kwargs)
     
         
-def export_node(mdl_object, obj, parent, exported_objects):
+def export_node(mdl_object, obj, parent, exported_objects, **kwargs):
     """ Export an object as a NWN geometry node.
         
     """
@@ -185,7 +195,7 @@ def export_node(mdl_object, obj, parent, exported_objects):
             node[prop.name] = eval("props.node_properties." + prop.name)
 
     if node_type in ["trimesh", "skin", "danglymesh", "aabb"]:
-        export_mesh(obj, node)
+        export_mesh(obj, node, **kwargs)
     elif node_type == "light":
         node['color'] = obj.data.color[:]
         node['radius'] = obj.data.distance
@@ -193,14 +203,28 @@ def export_node(mdl_object, obj, parent, exported_objects):
     exported_objects.append(obj)
     for child in obj.children:
         if props.is_nwn_object:
-            export_node(mdl_object, child, obj.name, exported_objects)
+            export_node(mdl_object, child, obj.name, exported_objects, **kwargs)
 
-def export_mesh(obj, node):
+def export_mesh(obj, node,force_tris = True, **kwargs):
     """ Exports the mesh data of a Mesh object to a nwn node """
     mesh = obj.data
     uv_faces = None
     image = None
-        
+    
+    #since NWN only accepts triangles as faces, we have to convert the mesh
+    # to tris. We don't wont to do this destructively though, so we do it to a
+    # copy of the mesh
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_name(name=obj.name)
+    bpy.ops.object.duplicate()
+    ob_dup = bpy.context.object
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.quads_convert_to_tris()
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    mesh = ob_dup.data
+    
     if mesh.uv_textures:
         uv_faces = mesh.uv_textures.active.data
         image = uv_faces[0].image
@@ -325,9 +349,10 @@ def export_mesh(obj, node):
         node["weights"] = weights
     
     elif node.type == "aabb":
-        print("Building aabb data")
-        root_node = build_aabb_tree(obj)
+        root_node = build_aabb_tree(ob_dup)
         node["aabb"] = root_node
+    
+    bpy.ops.object.delete()
         
 def build_aabb_tree(obj):
     """ Takes a object as an argument and returns a axis aligned bounding box tree """
@@ -347,10 +372,9 @@ def recursive_aabb(facelist, parent, level):
     """ Recursively build a tree of aabb nodes, returns the root of the subtree. 
     """
     # This code is heavily inspired by nwmax and Waylands original code
-    print(len(facelist))
-    
     if level > 20:
-        raise RuntimeError("Max recursion depth reached when building aabb tree")
+        raise RuntimeError("Max recursion depth reached when building aabb "
+                           "tree. Look for duplicate faces.")
         
     
     bottom_left = Vector((10000,10000,10000))
@@ -419,14 +443,14 @@ def recursive_aabb(facelist, parent, level):
         split = splits["y"]
     else:
         split = splits["z"]
-    print("Split left: %d right: %d" % (len(split["left"]), len(split["right"])))
+    
     if split["left"]:
         bounding_box["left"] = recursive_aabb(split["left"], bounding_box, level + 1)
     if split["right"]:
         bounding_box["right"] = recursive_aabb(split["right"], bounding_box, level + 1)
     return bounding_box
 
-def export_animations(scene, mdl_object,root_object, exported_objects):
+def export_animations(scene, mdl_object,root_object, exported_objects, **kwargs):
     """ Exports the Blender animations of the model """
     animations = scene.nwn_props.animations
     
