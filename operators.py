@@ -90,14 +90,8 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
         
         anim_ob = scene.nwn_props.animations.add()
         anim_ob.name = self.name
-        
-        marker = scene.timeline_markers.new(self.name + "_start")
-        marker.frame = start_frame
-        anim_ob.start_marker = marker
-        
-        marker = scene.timeline_markers.new(self.name + "_end")
-        marker.frame = end_frame
-        anim_ob.end_marker = marker
+        anim_ob.start_frame = start_frame
+        anim_ob.end_frame = end_frame
         
         context.area.tag_redraw() #force the gui to redraw
         
@@ -244,4 +238,29 @@ class OBJECT_OT_nwn_remove_walkmesh_materials(bpy.types.Operator):
     
     def execute(self, context):
         blend_props.remove_walkmesh_materials(context.object)
+        return {'FINISHED'}
+    
+    
+class SCENE_OT_nwn_recreate_start_marker(bpy.types.Operator):
+    bl_idname ="scene.nwn_recreate_start_marker"
+    bl_label = "Recreate start marker"
+    bl_description = "Recreates the start marker of the selected animation"
+    
+    animation = bpy.props.StringProperty(name="Animation object name")
+    
+    def execute(self, context):
+        animation = context.scene.nwn_props.animations[self.animation]
+        animation.create_start_marker()
+        return {'FINISHED'}
+    
+class SCENE_OT_nwn_recreate_end_marker(bpy.types.Operator):
+    bl_idname ="scene.nwn_recreate_end_marker"
+    bl_label = "Recreate end marker"
+    bl_description = "Recreates the end marker of the selected animation"
+    
+    animation = bpy.props.StringProperty(name="Animation object name")
+    
+    def execute(self, context):
+        animation = context.scene.nwn_props.animations[self.animation]
+        animation.create_end_marker()
         return {'FINISHED'}

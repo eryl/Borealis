@@ -238,18 +238,24 @@ class Animation(bpy.types.PropertyGroup):
         return self.get_start_marker().frame
     
     def set_start_frame(self, value):
-        print("Setting start frame")
         self.saved_start_frame = value
-        self.get_start_marker().frame = value
-        print("Saved frame: %d, marker frame: %d" % (self.saved_start_frame, self.get_start_frame()))
+        marker = self.get_start_marker()
+        if not marker:
+            marker = self.create_start_marker()
+        marker.frame = value
+    
+    def create_start_marker(self):
+        timeline_markers = bpy.context.scene.timeline_markers
+        marker = timeline_markers.new(name=(self.name + "_start"))
+        self.start_marker_name = marker.name
+        marker.frame = self.saved_start_frame
+        return marker
     
     def get_start_marker(self):
-        try:
+        if self.start_marker_name in bpy.context.scene.timeline_markers:
             return bpy.context.scene.timeline_markers[self.start_marker_name]
-        except KeyError:
-            print("Saved frame: %d while restoring" % (self.saved_start_frame))  
-            return None
-                
+        else:
+            return None    
     def set_start_marker(self, value):
         self.start_marker_name = value.name
     
@@ -258,17 +264,24 @@ class Animation(bpy.types.PropertyGroup):
     
     def set_end_frame(self, value):
         self.saved_end_frame = value
-        self.get_end_marker().frame = value
+        marker = self.get_end_marker()
+        if not marker:
+            marker = self.create_end_marker()
+        marker.frame = value
+    
+    def create_end_marker(self):
+        timeline_markers = bpy.context.scene.timeline_markers
+        marker = timeline_markers.new(name = self.name + "_end")
+        print("End frame: %d" % self.saved_end_frame)
+        self.end_marker_name = marker.name
+        marker.frame = self.saved_end_frame
+        return marker
     
     def get_end_marker(self):
-        try:
+        if self.end_marker_name in bpy.context.scene.timeline_markers: 
             return bpy.context.scene.timeline_markers[self.end_marker_name]
-        except KeyError:
-            marker = bpy.context.scene.timeline_markers.new(name=self.name + "_end")
-            self.end_marker_name = marker.name
-            marker.frame = self.saved_end_frame
-            return marker
-        
+        else:
+            return None
     def set_end_marker(self, value):
         self.end_marker_name = value.name
     

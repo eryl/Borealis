@@ -97,9 +97,15 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             anim_row = box.row()
             start_marker = animation.get_start_marker()
             end_marker = animation.get_end_marker()
-            anim_row.prop(start_marker, "frame", text="Start frame")
-            anim_row.prop(end_marker, "frame", text="End frame")
-            
+            if start_marker:
+                anim_row.prop(start_marker, "frame", text="Start frame")
+            else:
+                anim_row.operator("scene.nwn_recreate_start_marker").animation = animation.name                
+            if end_marker:
+                anim_row.prop(end_marker, "frame", text="End frame")
+            else:
+                op = anim_row.operator("scene.nwn_recreate_end_marker")
+                op.animation = animation.name
             event_box = box.box()
             row = event_box.row()
             row.label(text="Events:")

@@ -48,8 +48,8 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     objects = []
 
     if enforce_lowercase_names:
-        mdl.name = mdl.name.lower()
-        for node in mdl.geometry.nodes:
+        mdl_object.name = mdl_object.name.lower()
+        for node in mdl_object.geometry.nodes:
             node.name = node.name.lower()
             node["parent"] = node["parent"].lower()
             if node.type == "skin":
@@ -57,7 +57,7 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
                     for row in node["weights"]:
                         for i in enumerate(row):
                             row[i] = row[i].lower()
-        for animation in mdl.animations:
+        for animation in mdl_object.animations:
             animation.name = animation.name.lower()
             animation.animroot = animation.animroot.lower()
             for node in animation.nodes:
@@ -423,7 +423,6 @@ def import_animation(animation, animations_dict, current_frame,
     anim_ob.name = animation.name
     #set the start marker
     anim_ob.start_frame = start_frame
-    
     #set the end marker
     anim_ob.end_frame = end_frame
     

@@ -71,7 +71,6 @@ class Property:
     def read_value(self, current_line, model_data):
         self.value = self.format_input(current_line[1])
         self.value_written = True
-        
     
     def output_values(self):
         yield " "*TAB_SPACE + "%s %s" % (self.name, str(self.value))
