@@ -58,10 +58,10 @@ def compare(file1, file2):
             if node1.name == node2.name:
                 if node1.type != node2.type:
                     print("Differing node types; node %s\tmdl1: %s\tmdl2: %s" % 
-                           (node1.name, node1.type, node2,type ))
+                           (node1.name, node1.type, node2, type))
                 for name, prop in node1.properties.items():
                     if node2[name] != node1[name]:
-                        print("Property %s differs\tmdl1: %s\tmdl2: %s" %
+                        print("Property %s differs\tmdl1: %s\tmdl2: %s" % 
                               (name, str(node2[name]), str(node1[name])))
                 break   
         
@@ -72,12 +72,8 @@ class Model(object):
             The class is the basic container for the model.
     """ 
     
-    def __init__(self, name = "", enforce_lowercase_names=False):
-        self.enforce_lowercase_names = enforce_lowercase_names
-        if self.enforce_lowercase_names:
-            self.name = name.lower
-        else:
-            self.name = name
+    def __init__(self, name="", **kwargs):
+        self.name = name
         
         self.supermodel = ""
         self.classification = ""
@@ -147,16 +143,10 @@ class Model(object):
                     first_token = current_line[0].lower()
                     
                     if first_token == 'newmodel':
-                        if self.enforce_lowercase_names:
-                            self.name = current_line[1].lower()
-                        else:
-                            self.name = current_line[1]
+                        self.name = current_line[1]
         
                     elif first_token == 'setsupermodel':
-                        if self.enforce_lowercase_names:
-                            self.supermodel = current_line[2].lower()
-                        else:
-                            self.supermodel = current_line[2]
+                        self.supermodel = current_line[2]
                     
                     elif first_token == 'classification':
                         self.classification = str(current_line[1]).lower()
@@ -166,20 +156,14 @@ class Model(object):
             
                     elif first_token == 'beginmodelgeom':
                         geom_name = current_line[1]
-                        if self.enforce_lowercase_names:
-                            self.geometry.name = geom_name.lower()
-                        else:
-                            self.geometry.name = geom_name
+                        self.geometry.name = geom_name
                         self.geometry.from_file(model_data)
                     
                     elif first_token == 'newanim':
                         anim_name = current_line[1]
                         model_name = current_line[2]
-                        if self.enforce_lowercase_names:
-                            anim_name = anim_name.lower()
-                            model_name = model_name.lower()
                         
-                        new_anim = Animation(anim_name,model_name)
+                        new_anim = Animation(anim_name, model_name)
                         new_anim.from_file(model_data)
                         self.animations.append(new_anim)
                     
@@ -375,11 +359,11 @@ class Animation:
                 
     def output_animation(self):
         yield "newanim %s %s" % (self.name, self.mdl_name)
-        yield " "*TAB_WIDTH + "length %s" % str(self.length)
-        yield " "*TAB_WIDTH + "transtime %s" % str(self.transtime)
-        yield " "*TAB_WIDTH + "animroot %s" % self.animroot
+        yield " " * TAB_WIDTH + "length %s" % str(self.length)
+        yield " " * TAB_WIDTH + "transtime %s" % str(self.transtime)
+        yield " " * TAB_WIDTH + "animroot %s" % self.animroot
         for time, event in self.events:
-            yield " "*TAB_WIDTH + "event %.9g %s" % (time, event)
+            yield " " * TAB_WIDTH + "event %.9g %s" % (time, event)
         for node in self.nodes:
             yield str(node)
         yield "doneanim %s %s" % (self.name, self.mdl_name)

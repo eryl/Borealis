@@ -42,21 +42,36 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     """
     Imports a Neverwinter Nights model
     """
-    mdl_object = mdl.Model(enforce_lowercase_names=enforce_lowercase_names)
+    mdl_object = mdl.Model()
     mdl_object.from_file(filename)
     
     objects = []
+
+    if enforce_lowercase_names:
+        mdl.name = mdl.name.lower()
+        for node in mdl.geometry.nodes:
+            node.name = node.name.lower()
+            node["parent"] = node["parent"].lower()
+            if node.type == "skin":
+                if node["weights"].value_written:
+                    for row in node["weights"]:
+                        for i in enumerate(row):
+                            row[i] = row[i].lower()
+        for animation in mdl.animations:
+            animation.name = animation.name.lower()
+            animation.animroot = animation.animroot.lower()
+            for node in animation.nodes:
+                node.name = node.name.lower()
+                node["parent"] = node["parent"].lower()
     
     #Some of the import stuff assumes we're in object-mode, and we set it
     #accordingly
     #Theres a bug here; if there are no objects in the scene we can't set the mode to OBJECT
     #bpy.ops.object.mode_set(mode='OBJECT')
     
-    import_geometry(mdl_object, filename, context, objects, 
-                    enforce_lowercase_names = enforce_lowercase_names, **kwargs)
+    import_geometry(mdl_object, filename, context, objects, **kwargs)
     if mdl_object.animations:
         import_animations(mdl_object, context, objects, 
-                          enforce_lowercase_names = enforce_lowercase_names, 
                           **kwargs)
     
     #the basic settings for the models are assigned to the active scene object
@@ -67,13 +82,11 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     scene.nwn_props.supermodel = mdl_object.supermodel
     scene.nwn_props.animationscale = float(mdl_object.setanimationscale)
 
-def import_geometry(mdl_object, filename, context, objects, enforce_lowercase_names = True, **kwargs):
+def import_geometry(mdl_object, filename, context, objects, **kwargs):
     #create meshes from all nodes
     for node in mdl_object.geometry.nodes:
-        if enforce_lowercase_names:
-            node_name = node.name.lower()
-        else:
-            node_name = node.name
+        
+        node_name = node.name
         if node.type in ["dummy", "emitter", "reference"]:
             ob = bpy.data.objects.new(node_name, None)
 
@@ -163,10 +176,7 @@ def import_geometry(mdl_object, filename, context, objects, enforce_lowercase_na
             
         
         #set up parent, we assume the parent node is already imported
-        if (enforce_lowercase_names):
-            parent_name = node.get_prop_value("parent").lower()
-        else:
-            parent_name = node.get_prop_value("parent")
+        parent_name = node.get_prop_value("parent")
         try:
             parent_ob = bpy.data.objects[parent_name]
         except KeyError:
@@ -396,7 +406,7 @@ def set_static_frame(static_poses, animations_dict, current_frame):
     return current_frame
 
 def import_animation(animation, animations_dict, current_frame, 
-                     context, enforce_lowercase_names = True):
+                     context, **kwargs):
     """
     Parses a single animation and inserts channel data in animations_dict. 
     Returns the frame number of the last frame in the animation
@@ -424,10 +434,7 @@ def import_animation(animation, animations_dict, current_frame,
         event.update_name(None)
     
     for node in animation.nodes:
-        if enforce_lowercase_names:
-            node_name = node.name.lower()
-        else:
-            node_name = node.name
+        node_name = node.name
         #Found a model where some parts weren't in the geometry
         if node_name not in animations_dict:
             continue
