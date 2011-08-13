@@ -42,13 +42,13 @@ class Property:
     value = None
     data_type = str
     value_written = False
-    default_value = None
+    default = None
     show_in_gui = True
     gui_group = None
     description = None
     def __init__(self, name="", nodes=[], description = "", gui_name = "", 
-                 blender_ignore=False, default_value=None, show_in_gui=True, 
-                 gui_group="Ungrouped"):
+                 blender_ignore=False, default=None, show_in_gui=True, 
+                 gui_group="Ungrouped", **kwargs):
         
         self.name = name
         self.nodes = nodes
@@ -58,7 +58,7 @@ class Property:
         else:
             self.gui_name = self.name
         self.blender_ignore = blender_ignore
-        self.default_value = default_value
+        self.default = default
         if blender_ignore:
             self.show_in_gui = False
         else:
@@ -66,14 +66,12 @@ class Property:
         self.gui_group = gui_group
         
     def get_default_value(self):
-        return self.default_value
+        return self.default
     
     def read_value(self, current_line, model_data):
-        try:
-            self.value = self.format_input(current_line[1])
-            self.value_written = True
-        except:
-            print("foo")
+        self.value = self.format_input(current_line[1])
+        self.value_written = True
+        
     
     def output_values(self):
         yield " "*TAB_SPACE + "%s %s" % (self.name, str(self.value))
@@ -262,7 +260,7 @@ class FloatProperty(NumberProperty):
         # This tidies values, like the max export script seems to do
         yield " "*TAB_SPACE + "%s %.9g" % (self.name, self.value)
         
-class FloatVectorProperty(FloatProperty, VectorProperty):
+class FloatVectorProperty(VectorProperty, FloatProperty):
     data_type = float
 
     def output_values(self):
@@ -444,27 +442,28 @@ class GeometryNodeProperties(NodeProperties):
                 ColorProperty(name="ambient", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
                 ColorProperty(name="diffuse", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
                 ColorProperty(name="specular", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group=["Material settings", "Colors"]),
-                IntProperty(name="shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings"),
-                FloatProperty(name="alpha", nodes = ["trimesh", "danglymesh", "skin"], gui_group="Material settings"),
+                IntProperty(name="shininess", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Material settings", default= 26, min=0, max=255),
+                FloatProperty(name="alpha", nodes = ["trimesh", "danglymesh", "skin"], gui_group="Material settings", min=0, max=1, default=1),
                 ColorProperty(name="selfillumcolor", nodes = ["trimesh", "danglymesh", "skin"], gui_name="Self illumination color", gui_group="Material settings"),
                 
-                BooleanProperty(name="shadow", nodes = ["trimesh", "danglymesh", "skin", "aabb"], gui_group="Render Options"),
-                BooleanProperty(name='beaming', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                BooleanProperty(name='rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options"),
-                EnumProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"], gui_group="Render Options", enums = {"Don't fade": 0, "Fade": 1, "Neighbour": 2, "Base": 4}),
+                BooleanProperty(name="shadow", nodes = ["trimesh", "danglymesh", "skin", "aabb"], default=True, gui_group="Render Options"),
+                BooleanProperty(name='beaming', nodes = ["trimesh", "danglymesh", "skin"], default=False, gui_group="Render Options"),
+                BooleanProperty(name='rotatetexture', nodes = ["trimesh", "danglymesh", "skin"], default=False, gui_group="Render Options"),
+                EnumProperty(name='tilefade', nodes = ["trimesh", "danglymesh", "skin"], default="Don't fade", gui_group="Render Options", enums = {"Don't fade": 0, "Fade": 1, "Neighbour": 2, "Base": 4}),
                 
                 StringProperty(name="bitmap", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                 FloatMatrixProperty(name="verts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                 FloatMatrixProperty(name="tverts", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                 IntMatrixProperty(name="faces", nodes = ["trimesh", "danglymesh", "skin", "aabb"], blender_ignore=True),
                 
-                FloatProperty(name="scale", nodes = ["trimesh", "danglymesh", "skin"]),
-                BooleanProperty(name='transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"]),
-                BooleanProperty(name='inheritcolor', nodes = ["trimesh", "danglymesh", "skin"]),
-                BooleanProperty(name='center', nodes = ["trimesh", "danglymesh", "skin"]),
+                FloatProperty(name="scale", nodes = ["trimesh", "danglymesh", "skin"], default=1),
+                BooleanProperty(name='transparencyhint', nodes = ["trimesh", "danglymesh", "skin", "aabb"], default=False),
+                BooleanProperty(name='inheritcolor', nodes = ["trimesh", "danglymesh", "skin"], default=False),
+                FloatVectorProperty(name='center', nodes = ["trimesh", "danglymesh", "skin"]),
                 ColorProperty(name="wireocolor", nodes = ["trimesh", "danglymesh", "skin", "aabb", "reference"]),
                 BooleanProperty(name='render', 
                                 nodes=["trimesh", "danglymesh", "skin"], 
+                                default=True,
                                 gui_group="Render Options",
                                 description="If render is on, then the part "
                                     "renders, if it is not then it doesn't. "
@@ -476,9 +475,9 @@ class GeometryNodeProperties(NodeProperties):
                 FloatMatrixProperty(name='colors', nodes = ["trimesh", "danglymesh", "skin"], blender_ignore = True),
                 
                 ### danglymesh ###
-                FloatProperty(name="displacement", nodes = ["danglymesh"], gui_group="Dangly Mesh settings"),
-                IntProperty(name="period", nodes = ["danglymesh"], gui_group="Dangly Mesh settings"),
-                IntProperty(name="tightness", nodes = ["danglymesh"], gui_group="Dangly Mesh settings"),
+                FloatProperty(name="displacement", nodes = ["danglymesh"], gui_group="Dangly Mesh settings", min=0),
+                IntProperty(name="period", nodes = ["danglymesh"], gui_group="Dangly Mesh settings", min=0, default=6),
+                IntProperty(name="tightness", nodes = ["danglymesh"], gui_group="Dangly Mesh settings", min=0),
                 IntMatrixProperty(name="constraints", nodes = ["danglymesh"], blender_ignore=True),
                 
                 ### skin ###

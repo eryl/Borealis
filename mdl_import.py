@@ -42,7 +42,7 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     """
     Imports a Neverwinter Nights model
     """
-    mdl_object = mdl.Model()
+    mdl_object = mdl.Model(enforce_lowercase_names=enforce_lowercase_names)
     mdl_object.from_file(filename)
     
     objects = []
@@ -412,14 +412,10 @@ def import_animation(animation, animations_dict, current_frame,
     anim_ob = scene.nwn_props.animations.add()
     anim_ob.name = animation.name
     #set the start marker
-    m = scene.timeline_markers.new(animation.name + "_start")
-    m.frame = start_frame
-    anim_ob.start_marker = m
+    anim_ob.start_frame = start_frame
     
     #set the end marker
-    m = scene.timeline_markers.new(animation.name + "_end")
-    m.frame = end_frame
-    anim_ob.end_marker = m
+    anim_ob.end_frame = end_frame
     
     for (time, event_type) in animation.events:
         event = anim_ob.events.add()

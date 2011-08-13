@@ -72,14 +72,20 @@ class Model(object):
             The class is the basic container for the model.
     """ 
     
-    def __init__(self, name = ""):
-        self.name = name
+    def __init__(self, name = "", enforce_lowercase_names=False):
+        self.enforce_lowercase_names = enforce_lowercase_names
+        if self.enforce_lowercase_names:
+            self.name = name.lower
+        else:
+            self.name = name
+        
         self.supermodel = ""
         self.classification = ""
         self.setanimationscale = 1
    
         self.geometry = Geometry(self.name)
         self.animations = []
+        
     
     def new_geometry_node(self, type, name):
         """ Creates and returns a new geometry node  """
@@ -141,11 +147,17 @@ class Model(object):
                     first_token = current_line[0].lower()
                     
                     if first_token == 'newmodel':
-                        self.name = current_line[1]
+                        if self.enforce_lowercase_names:
+                            self.name = current_line[1].lower()
+                        else:
+                            self.name = current_line[1]
         
                     elif first_token == 'setsupermodel':
-                        self.supermodel = current_line[2]
-            
+                        if self.enforce_lowercase_names:
+                            self.supermodel = current_line[2].lower()
+                        else:
+                            self.supermodel = current_line[2]
+                    
                     elif first_token == 'classification':
                         self.classification = str(current_line[1]).lower()
                         
@@ -154,12 +166,19 @@ class Model(object):
             
                     elif first_token == 'beginmodelgeom':
                         geom_name = current_line[1]
-                        self.geometry.name = geom_name
+                        if self.enforce_lowercase_names:
+                            self.geometry.name = geom_name.lower()
+                        else:
+                            self.geometry.name = geom_name
                         self.geometry.from_file(model_data)
                     
                     elif first_token == 'newanim':
                         anim_name = current_line[1]
                         model_name = current_line[2]
+                        if self.enforce_lowercase_names:
+                            anim_name = anim_name.lower()
+                            model_name = model_name.lower()
+                        
                         new_anim = Animation(anim_name,model_name)
                         new_anim.from_file(model_data)
                         self.animations.append(new_anim)

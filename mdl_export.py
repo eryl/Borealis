@@ -531,7 +531,6 @@ def build_animation_data(objects, animations):
         if not object.animation_data:
             continue
         for fcurve in object.animation_data.action.fcurves:
-            attribute_name = "foo"
             if fcurve.data_path == "location":
                 if fcurve.array_index == 0:
                     attribute_name = "x"

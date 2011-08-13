@@ -106,8 +106,8 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
 
         ##The order of the cases are important since some properties are subtypes of other
         if isinstance(prop, basic_props.ColorProperty):
-            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(name = prop.name, size = 3, 
-                                                                      subtype='COLOR', min = 0, max = 1)
+            kwargs["subtype"] = 'COLOR'
+            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.StringProperty):
@@ -115,7 +115,7 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.FloatVectorProperty):
-            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(size = 3, **kwargs)
+            attribute_dict[prop.name] = bpy.props.FloatVectorProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
         elif isinstance(prop, basic_props.BooleanProperty):
@@ -227,18 +227,29 @@ class Animation(bpy.types.PropertyGroup):
     transtime = bpy.props.FloatProperty(name = "Transition time", default = 1)
     events = bpy.props.CollectionProperty(type = AnimationEvent)
     event_index = bpy.props.IntProperty(name = "Current event")
+    
+    #We save away the frames so we can recreate the markers if they are removed
+    saved_start_frame = bpy.props.IntProperty(name="Original Start frame", default=1)
+    saved_end_frame = bpy.props.IntProperty(name="Original End frame", default=1)
+    
     ### Since the animations are tightly coupled to the markers
     ### dynamic properties are used for it's attributes
-    
     def get_start_frame(self):
         return self.get_start_marker().frame
     
     def set_start_frame(self, value):
+        print("Setting start frame")
+        self.saved_start_frame = value
         self.get_start_marker().frame = value
+        print("Saved frame: %d, marker frame: %d" % (self.saved_start_frame, self.get_start_frame()))
     
     def get_start_marker(self):
-        return bpy.context.scene.timeline_markers[self.start_marker_name]
-        
+        try:
+            return bpy.context.scene.timeline_markers[self.start_marker_name]
+        except KeyError:
+            print("Saved frame: %d while restoring" % (self.saved_start_frame))  
+            return None
+                
     def set_start_marker(self, value):
         self.start_marker_name = value.name
     
@@ -246,10 +257,17 @@ class Animation(bpy.types.PropertyGroup):
         return self.get_end_marker().frame
     
     def set_end_frame(self, value):
+        self.saved_end_frame = value
         self.get_end_marker().frame = value
     
     def get_end_marker(self):
-        return bpy.context.scene.timeline_markers[self.end_marker_name]
+        try:
+            return bpy.context.scene.timeline_markers[self.end_marker_name]
+        except KeyError:
+            marker = bpy.context.scene.timeline_markers.new(name=self.name + "_end")
+            self.end_marker_name = marker.name
+            marker.frame = self.saved_end_frame
+            return marker
         
     def set_end_marker(self, value):
         self.end_marker_name = value.name
