@@ -85,7 +85,8 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
         col.operator("scene.add_nwn_anim", icon='ZOOMIN', text="")
         col.operator("scene.remove_nwn_anim", icon='ZOOMOUT', text="")
         
-        if nwn_props.animations:
+        if (nwn_props.animations and nwn_props.animation_index >= 0 
+                and nwn_props.animation_index < len(nwn_props.animations)):
             index = nwn_props.animation_index
             animation = nwn_props.animations[index]
             
@@ -93,6 +94,8 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             box.row().operator("scene.nwn_anim_focus")
             anim_row = box.row()
             anim_row.prop(animation, "name")
+            anim_row = box.row()
+            anim_row.prop_search(animation, "animroot", bpy.data, "objects")
             
             anim_row = box.row()
             start_marker = animation.get_start_marker()
@@ -101,6 +104,7 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
                 anim_row.prop(start_marker, "frame", text="Start frame")
             else:
                 anim_row.operator("scene.nwn_recreate_start_marker").animation = animation.name                
+            anim_row = box.row()
             if end_marker:
                 anim_row.prop(end_marker, "frame", text="End frame")
             else:

@@ -73,8 +73,8 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     bl_idname ="scene.add_nwn_anim"
     bl_label = "Add a new NWN animation"
     
-    name = bpy.props.StringProperty("Animation name")
-    length = bpy.props.IntProperty("Animation length (frames)", default=50, min=0)
+    name = bpy.props.StringProperty(name="Animation name")
+    length = bpy.props.IntProperty(name="Animation length (frames)", default=50, min=0)
     
     def execute(self, context):
         print("add animation")

@@ -227,6 +227,7 @@ class Animation(bpy.types.PropertyGroup):
     transtime = bpy.props.FloatProperty(name = "Transition time", default = 1)
     events = bpy.props.CollectionProperty(type = AnimationEvent)
     event_index = bpy.props.IntProperty(name = "Current event")
+    animroot=bpy.props.StringProperty(name="Animation root")
     
     #We save away the frames so we can recreate the markers if they are removed
     saved_start_frame = bpy.props.IntProperty(name="Original Start frame", default=1)
@@ -302,7 +303,7 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
     animationscale = bpy.props.FloatProperty(name = "Animation Scale", min=0, max=1000, default=1)
     root_object_name = bpy.props.StringProperty(name = "Root object name")
     animations = bpy.props.CollectionProperty(type=Animation)
-    animation_index = bpy.props.IntProperty(name = "Index of currently selected animation")    
+    animation_index = bpy.props.IntProperty(name = "Index of currently selected animation", min=-1, default=-1)    
     
 
        
