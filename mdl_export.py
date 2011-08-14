@@ -466,7 +466,7 @@ def export_animation(animation_data, scene, animation, mdl_object, root_object):
     
     fps = scene.render.fps
     nwn_anim = mdl_object.new_animation(animation.name)
-    nwn_anim.animroot = root_object.name 
+    nwn_anim.animroot = animation.animroot 
     start_frame = animation.start_frame
     end_frame = animation.end_frame
     nwn_anim.length = (end_frame - start_frame) / fps

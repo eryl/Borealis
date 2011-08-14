@@ -421,6 +421,8 @@ def import_animation(animation, animations_dict, current_frame,
     #The animation object holds the borealis-specific data, such as marker information
     anim_ob = scene.nwn_props.animations.add()
     anim_ob.name = animation.name
+    anim_ob.animroot = animation.animroot
+    
     #set the start marker
     anim_ob.start_frame = start_frame
     #set the end marker
