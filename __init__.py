@@ -55,18 +55,10 @@ class BorealisImport(bpy.types.Operator, ImportHelper):
                           description="File path used for importing "
                                       "the MDL file",
                           type=bpy.types.OperatorFileListElement)
-
     directory = StringProperty(subtype='DIR_PATH')
 
     def execute(self, context):
-        
-        paths = [os.path.join(self.directory, name.name) for name in self.files]
-        if not paths:
-            paths.append(self.filepath)
-        
-        for path in paths:
-            mdl_import.import_mdl(path, context)
-            
+        mdl_import.import_mdl(self.filepath, context)
         return {'FINISHED'}
 
 def register():

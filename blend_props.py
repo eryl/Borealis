@@ -208,7 +208,7 @@ class AnimationEvent(bpy.types.PropertyGroup):
     name = bpy.props.StringProperty(name = "Name")
     events = ["cast","hit","blur_start","blur_end",
               "snd_footstep","snd_hitground","draw_arrow","draw_weapon"]
-    type = bpy.props.EnumProperty("Event Type", items = [('cast','cast','cast'),
+    type = bpy.props.EnumProperty(name="Event Type", items = [('cast','cast','cast'),
                                                         ('hit','hit','hit'),
                                                         ('blur_start','blur_start','blur_start'),
                                                         ('blur_end','blur_end','blur_end'),
@@ -217,7 +217,11 @@ class AnimationEvent(bpy.types.PropertyGroup):
                                                         ('draw_arrow','draw_arrow','draw_arrow'),
                                                         ('draw_weapon','draw_weapon','draw_weapon')],
                                   default="hit", update = update_name)
-    time = bpy.props.FloatProperty("Time at which event occurs (in seconds)", default = 0.5, min = 0, step = 0.1, precision=2, update=update_name)
+    time = bpy.props.FloatProperty(name="Event time",
+                                   description="Time at which event occurs "
+                                   "(in seconds)", 
+                                   default = 0.5, min = 0, step = 0.1, 
+                                   precision=2, update=update_name)
     
         
 class Animation(bpy.types.PropertyGroup):
@@ -273,7 +277,6 @@ class Animation(bpy.types.PropertyGroup):
     def create_end_marker(self):
         timeline_markers = bpy.context.scene.timeline_markers
         marker = timeline_markers.new(name = self.name + "_end")
-        print("End frame: %d" % self.saved_end_frame)
         self.end_marker_name = marker.name
         marker.frame = self.saved_end_frame
         return marker

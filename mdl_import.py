@@ -47,6 +47,8 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     
     objects = []
 
+    print("Import nwn model")
+
     if enforce_lowercase_names:
         mdl_object.name = mdl_object.name.lower()
         for node in mdl_object.geometry.nodes:

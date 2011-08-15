@@ -119,13 +119,14 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
             
             col.template_list(animation, "events",
                               animation, "event_index",
-                              rows=3)
+                              rows=3,type='DEFAULT')
             
             col = row.column(align=True)
             col.operator("scene.add_nwn_anim_event", icon='ZOOMIN', text="")
             col.operator("scene.remove_nwn_anim_event", icon='ZOOMOUT', text="")
             
-            if animation.events:
+            if (animation.events and animation.event_index >= 0 
+                    and animation.event_index < len(animation.events)):
                 event = animation.events[animation.event_index]
                 
                 row = event_box.row()
