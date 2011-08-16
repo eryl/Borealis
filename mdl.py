@@ -36,8 +36,10 @@ import os
         
 try:
     from . import basic_props
+    from . import node_props
 except ValueError:
     import basic_props
+    import node_props
     
 TAB_WIDTH = 2
 """ The spaces to use for every level of indentation when outputting data"""
@@ -243,7 +245,7 @@ class Node:
         
         self.name = name
         self.type = type
-        props = basic_props.GeometryNodeProperties.get_node_properties(self.type)
+        props = node_props.GeometryNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         for prop in props:
@@ -298,7 +300,7 @@ class Node:
         
         # We get the properties list from the GeometryNodeProperties to
         # produce the output in the correct order
-        props = basic_props.GeometryNodeProperties.get_node_properties(self.type)
+        props = node_props.GeometryNodeProperties.get_node_properties(self.type)
         yield "node %s %s" % (self.type, self.name)
         for property in props:
             if property.name in self.properties:
@@ -376,7 +378,7 @@ class AnimationNode(Node):
         
         self.name = name
         self.type = node_type
-        props = basic_props.AnimationNodeProperties.get_node_properties(self.type)
+        props = node_props.AnimationNodeProperties.get_node_properties(self.type)
         self.properties = {}
         
         for prop in props:
@@ -385,7 +387,7 @@ class AnimationNode(Node):
     def output_node(self):
         # We get the properties list from the GeometryNodeProperties to
         # produce the output in the correct order
-        props = basic_props.AnimationNodeProperties.get_node_properties(self.type)
+        props = node_props.AnimationNodeProperties.get_node_properties(self.type)
         yield "node %s %s" % (self.type, self.name)
         for property in props:
             if property.name in self.properties:

@@ -66,7 +66,22 @@ class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     def invoke(self,context, event):
         wm = context.window_manager
         return wm.invoke_confirm(self, event)
+
+class SCENE_OT_add_nwn_animation_set(bpy.types.Operator):
+    """ Adds a complete set of animations according to the selected category """
+    bl_idname = "scene.add_nwn_animation_set"
+    bl_label = "Add all animations for a specific category"
+    categories = basic_props.get_animation_categories()
+    category = bpy.props.EnumProperty(name="Animation category", 
+                                      items=[(t,t,t) for t in categories])
     
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
 class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     """ Adds a new Neverwinter Nights animation to the scene object """
     
@@ -75,6 +90,13 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     
     name = bpy.props.StringProperty(name="Animation name", default="Unnamed")
     length = bpy.props.IntProperty(name="Animation length (frames)", default=50, min=0)
+    
+    
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.prop(self, "name")
+        col.prop(self, "length")
     
     def execute(self, context):
         scene = context.scene

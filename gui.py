@@ -24,7 +24,7 @@ Contains GUI elements for working with Neverwinter Nights models in Blender
 '''
 import bpy
 
-from . import basic_props
+from . import node_props
 from . import blend_props
 
 class OBJECT_PT_nwn_colors(bpy.types.Panel):
@@ -174,7 +174,7 @@ class OBJECT_PT_nwn_node_tools(bpy.types.Panel):
             #box.operator("object.nwn_remove_walkmesh_materials")
             #Compare all possible settings for the specific node_type with the ones 
             #loaded into blender
-            gui_group_root = basic_props.GeometryNodeProperties.get_node_gui_groups(node_type)
+            gui_group_root = node_props.GeometryNodeProperties.get_node_gui_groups(node_type)
             
             def layout_groups(name, props_, subgroups, parent_box):
                 box = parent_box.box()

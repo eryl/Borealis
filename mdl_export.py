@@ -38,6 +38,7 @@ import mathutils
 from mathutils import Vector
 
 from . import basic_props
+from . import node_props
 from . import blend_props
 from . import mdl
     
@@ -189,7 +190,7 @@ def export_node(mdl_object, obj, parent, exported_objects, **kwargs):
     
     node['position'] = obj.location
     
-    for prop in basic_props.GeometryNodeProperties.get_node_properties(node_type):
+    for prop in node_props.GeometryNodeProperties.get_node_properties(node_type):
         #only export the properties which are set in the properties group
         if prop.name in props.node_properties and not prop.blender_ignore:
             node[prop.name] = eval("props.node_properties." + prop.name)

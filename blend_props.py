@@ -28,6 +28,8 @@ import mathutils
 from mathutils import Color
 
 from . import basic_props
+from . import props_classes
+from . import node_props
         
 def register():
     bpy.types.Object.nwn_props = bpy.props.PointerProperty(type=BorealisDummySettings)
@@ -82,7 +84,7 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
     
     props = []
     for node_type in node_types:
-        props.extend(basic_props.GeometryNodeProperties.get_node_properties(node_type))
+        props.extend(node_props.GeometryNodeProperties.get_node_properties(node_type))
     props = set(props)
     
     #we build the attribute dictionary by using the definitions from borealis_mdl_definitions
@@ -94,45 +96,45 @@ def add_properties(data_path, node_types, classname = "BorealisNodeProps"):
         if prop.get_default_value():
             kwargs["default"] = prop.get_default_value()
             
-        if isinstance(prop, basic_props.NumberProperty):
+        if isinstance(prop, props_classes.NumberProperty):
             if prop.max:
                 kwargs["max"] = prop.max
             if prop.min:
                 kwargs["min"] = prop.min
                 
-        if isinstance(prop, basic_props.VectorProperty):
+        if isinstance(prop, props_classes.VectorProperty):
             if prop.size:
                 kwargs["size"] = prop.size
 
         ##The order of the cases are important since some properties are subtypes of other
-        if isinstance(prop, basic_props.ColorProperty):
+        if isinstance(prop, props_classes.ColorProperty):
             kwargs["subtype"] = 'COLOR'
             attribute_dict[prop.name] = bpy.props.FloatVectorProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
-        elif isinstance(prop, basic_props.StringProperty):
+        elif isinstance(prop, props_classes.StringProperty):
             attribute_dict[prop.name] = bpy.props.StringProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
-        elif isinstance(prop, basic_props.FloatVectorProperty):
+        elif isinstance(prop, props_classes.FloatVectorProperty):
             attribute_dict[prop.name] = bpy.props.FloatVectorProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
-        elif isinstance(prop, basic_props.BooleanProperty):
+        elif isinstance(prop, props_classes.BooleanProperty):
             attribute_dict[prop.name] = bpy.props.BoolProperty(**kwargs)
             attribute_dict["properties"].append(prop)
             
-        elif isinstance(prop, basic_props.EnumProperty):
+        elif isinstance(prop, props_classes.EnumProperty):
             items = prop.get_blender_items()
             kwargs["items"] = items
             attribute_dict[prop.name] = bpy.props.EnumProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
-        elif isinstance(prop, basic_props.IntProperty):
+        elif isinstance(prop, props_classes.IntProperty):
             attribute_dict[prop.name] = bpy.props.IntProperty(**kwargs)
             attribute_dict["properties"].append(prop)
         
-        elif isinstance(prop, basic_props.FloatProperty):
+        elif isinstance(prop, props_classes.FloatProperty):
             attribute_dict[prop.name] = bpy.props.FloatProperty(**kwargs)
             attribute_dict["properties"].append(prop)
 
