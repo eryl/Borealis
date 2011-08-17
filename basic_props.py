@@ -418,3 +418,4 @@ animation_names = {
 'Night': ["Character"],
 'Night2Day': ["Character"],
 }
+
