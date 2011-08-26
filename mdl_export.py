@@ -42,7 +42,6 @@ from . import node_props
 from . import blend_props
 from . import mdl
     
-
 class BorealisExport(bpy.types.Operator, ExportHelper):
     """ Exports a Blender Object hierarchy to a Neverwinter Nights mdl model.
     

@@ -1,28 +1,23 @@
-__all__ = [get_names]
-
+names = {}
 def get_names():
-    """ returns a dictionary containing all the animation names """
-    return names_generator().next()
-    
-def names_generator():
-    names = {}
-    
-    for group in [items, door,  effect, tile, gui]:
-        for animation, dict in group.items():
-            for class_name in dict["classes"]:
-                if class_name not in names:
-                    names[class_name] = []
-                names[class_name].append(animation)
-    names["Character"] = {}
-    for group in [character_player_full, character_simple_large]:
-        for animation, dict in group.items():
-            for class_name in dict["classes"]:
-                if class_name not in names["Character"]:
-                    names["Character"][class_name] = []
-                names["Character"][class_name].append(animation)
+    if not names:
+        for group in [items, door,  effect, tile, gui]:
+            for animation, dict in group.items():
+                for class_name in dict["classes"]:
+                    class_name = class_name.lower()
+                    if class_name not in names:
+                        names[class_name] = []
+                    names[class_name].append(animation)
+        names["character"] = {}
+        for group in [character_player_full, character_simple_large]:
+            for animation, dict in group.items():
+                for class_name in dict["classes"]:
+                    class_name = class_name.lower()
+                    if class_name not in names["character"]:
+                        names["character"][class_name] = []
+                    names["character"][class_name].append(animation)
                 
-    while True:
-        yield names
+    return names
 
 
 items = {

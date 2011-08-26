@@ -30,6 +30,8 @@ properties for all Neverwinter specific settings.
 import os
 
 import bpy
+from bpy_extras.io_utils import ImportHelper
+from bpy.props import CollectionProperty, StringProperty, BoolProperty
 
 from . import mdl
 from . import blend_props
@@ -38,7 +40,36 @@ from . import basic_props
 IMAGE_EXTENSIONS = ["tga", "dds", "TGA", "DDS"]
 DEFAULT_IMG_SIZE = 128
 
-def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
+class BorealisImport(bpy.types.Operator, ImportHelper):
+    '''
+    Import Neverwinter Nights model in ascii format
+    '''
+    bl_idname = "import_mesh.nwn_mdl"
+    bl_label = "Import NWN Mdl"
+
+    filename_ext = ".mdl"
+
+    filter_glob = StringProperty(default="*.mdl", options={'HIDDEN'})
+
+    files = CollectionProperty(name="File Path",
+                          description="File path used for importing "
+                                      "the MDL file",
+                          type=bpy.types.OperatorFileListElement)
+    directory = StringProperty(subtype='DIR_PATH')
+
+    do_import_animations = BoolProperty(name="Import animations", default=True,
+                                     description="Should the animations be"
+                                     "imported as well. If not selected, only"
+                                     " geometry will be imported.")
+
+    def execute(self, context):
+        kwargs = self.as_keywords(ignore=("check_existing", "filter_glob", 
+                                          "files" "directory", "filename_ext"))
+        import_mdl(self.filepath, context, **kwargs)
+        return {'FINISHED'}
+
+def import_mdl(filename, context, enforce_lowercase_names = True, 
+               do_import_animations=True, **kwargs):
     """
     Imports a Neverwinter Nights model
     """
@@ -72,7 +103,7 @@ def import_mdl(filename, context, enforce_lowercase_names = True, **kwargs):
     #bpy.ops.object.mode_set(mode='OBJECT')
     
     import_geometry(mdl_object, filename, context, objects, **kwargs)
-    if mdl_object.animations:
+    if mdl_object.animations and do_import_animations:
         import_animations(mdl_object, context, objects, 
                           **kwargs)
     

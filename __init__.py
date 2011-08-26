@@ -32,34 +32,13 @@ bl_info = {
 
 import bpy
 from bpy.props import StringProperty, CollectionProperty
-from bpy_extras.io_utils import ExportHelper, ImportHelper
+
 import os
 from . import blend_props
 from . import gui
 from . import operators
 from . import mdl_import
 from . import mdl_export
-
-class BorealisImport(bpy.types.Operator, ImportHelper):
-    '''
-    Import Neverwinter Nights model in ascii format
-    '''
-    bl_idname = "import_mesh.nwn_mdl"
-    bl_label = "Import NWN Mdl"
-
-    filename_ext = ".mdl"
-
-    filter_glob = StringProperty(default="*.mdl", options={'HIDDEN'})
-
-    files = CollectionProperty(name="File Path",
-                          description="File path used for importing "
-                                      "the MDL file",
-                          type=bpy.types.OperatorFileListElement)
-    directory = StringProperty(subtype='DIR_PATH')
-
-    def execute(self, context):
-        mdl_import.import_mdl(self.filepath, context)
-        return {'FINISHED'}
 
 def register():
     bpy.utils.register_module(__name__)

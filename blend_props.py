@@ -310,5 +310,6 @@ class BorealisBasicProperties(bpy.types.PropertyGroup):
     animations = bpy.props.CollectionProperty(type=Animation)
     animation_index = bpy.props.IntProperty(name = "Index of currently selected animation", min=-1, default=-1)    
     
-
+class AnimationName(bpy.types.PropertyGroup):
+    name = bpy.props.StringProperty(name="Animation name", default="default")
        

@@ -74,9 +74,10 @@ class OBJECT_PT_nwn_animations(bpy.types.Panel):
         
         nwn_props = context.scene.nwn_props
         
+        box.operator("scene.add_nwn_anim_set")
+        
         row = box.row()
         col = row.column()
-
         col.template_list(nwn_props, "animations",
                           nwn_props, "animation_index",
                           rows=3)

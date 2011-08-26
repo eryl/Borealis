@@ -32,7 +32,9 @@ from mathutils import Color
 
 from . import basic_props
 from . import blend_props
+from . import animation_names
 
+ANIMATION_FRAME_GAP = 10
 
 class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     """ Operator which removes an nwn animation from the scene object """
@@ -65,22 +67,8 @@ class SCENE_OT_remove_nwn_animation(bpy.types.Operator):
     
     def invoke(self,context, event):
         wm = context.window_manager
-        return wm.invoke_confirm(self, event)
-
-class SCENE_OT_add_nwn_animation_set(bpy.types.Operator):
-    """ Adds a complete set of animations according to the selected category """
-    bl_idname = "scene.add_nwn_animation_set"
-    bl_label = "Add all animations for a specific category"
-    categories = basic_props.get_animation_categories()
-    category = bpy.props.EnumProperty(name="Animation category", 
-                                      items=[(t,t,t) for t in categories])
-    
-    def invoke(self, context, event):
-        wm = context.window_manager
         return wm.invoke_props_dialog(self)
 
-    def execute(self, context):
-        return {'FINISHED'}
 
 class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     """ Adds a new Neverwinter Nights animation to the scene object """
@@ -90,13 +78,7 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
     
     name = bpy.props.StringProperty(name="Animation name", default="Unnamed")
     length = bpy.props.IntProperty(name="Animation length (frames)", default=50, min=0)
-    
-    
-    def draw(self, context):
-        layout = self.layout
-        col = layout.column()
-        col.prop(self, "name")
-        col.prop(self, "length")
+    names = bpy.props.CollectionProperty(type=blend_props.AnimationName)
     
     def execute(self, context):
         scene = context.scene
@@ -106,7 +88,7 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
             if marker.frame > last_frame:
                 last_frame = marker.frame
         
-        start_frame = last_frame + 10
+        start_frame = last_frame + ANIMATION_FRAME_GAP
         end_frame = start_frame + self.length
         
         anim_ob = scene.nwn_props.animations.add()
@@ -118,11 +100,30 @@ class SCENE_OT_add_nwn_animation(bpy.types.Operator):
         
         return {'FINISHED'}
 
-
     def invoke(self, context, event):
         wm = context.window_manager
+        classification = context.scene.nwn_props.classification
+        names = animation_names.get_names()[classification]
+        if classification.lower() == "character":
+            new_names = []
+            for subclass, sub_names in names.items():
+                new_names.extend(sub_names)
+            names = new_names
+        
+        for name in names:
+            new_name = self.names.add()
+            new_name.name = name
+        print(self.names[:])
         return wm.invoke_props_dialog(self)
 
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        #Prop search is buggy, we use a simple input field for now
+        #col.prop_search(self, "name", self, "names")
+        col.prop(self, "name")
+        col.prop(self, "length")
+        
 class SCENE_OT_remove_nwn_anim_event(bpy.types.Operator):
     """ Removes the currently selected event in the current animation """
     
@@ -186,7 +187,6 @@ class SCENE_OT_add_nwn_anim_event(bpy.types.Operator):
         
         return {'FINISHED'}
 
-
     def invoke(self, context, event):
         wm = context.window_manager
         
@@ -225,12 +225,88 @@ class SCENE_OT_nwn_anim_focus(bpy.types.Operator):
         scene.frame_start = start_frame # for some reason there's a bug if frame_start is set only once
         
         return {'FINISHED'}
+
+class SCENE_OT_remove_all_nwn_anims(bpy.types.Operator):
+    """
+        Removes all Neverwinter Nights Animations
+    """
+    bl_idname = "scene.remove_all_nwn_anims"
+    bl_label = "Remove all animations"
+
+    def execute(self, context):
+        return {'FINISHED'}
     
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_confirm(self, event)
+    
+class SCENE_OT_add_nwn_anim_set(bpy.types.Operator):
+    """ Adds a complete set of animations according to the selected category """
+    bl_idname = "scene.add_nwn_anim_set"
+    bl_label = "Add all animations"
+    def get_categories(self, context):
+        classification = context.scene.nwn_props.classification
+        names = animation_names.get_names()[classification]
+        if isinstance(names, dict):
+            items=[(item, item, item) for item in names.keys()]
+        else:
+            items=[(classification, classification, classification)]
+        return items
+    
+    categories = bpy.props.EnumProperty(name="Subcategory", items=get_categories)
+    animation_root = bpy.props.StringProperty(name="Animation Root")
+    length = 50
+    
+    def draw(self, context):
+        layout = self.layout
+        classification = context.scene.nwn_props.classification
+        col = layout.column()
+        col.label(text="Adding animations for model class %s" % classification.capitalize())
+        if classification.lower() == "character":
+            col.prop(self, "categories")
+        col.prop_search(self, "animation_root", context.scene, "objects")
+        
+    def execute(self, context):
+        scene = context.scene
+        #find the last marker to get a good place to insert the new animation
+        last_frame = 0
+        for marker in scene.timeline_markers:
+            if marker.frame > last_frame:
+                last_frame = marker.frame
+        start_frame = last_frame + ANIMATION_FRAME_GAP
+        last_frame = start_frame + self.length
+        
+        classification = context.scene.nwn_props.classification
+        names = animation_names.get_names()[classification]
+        if classification.lower() == "character":
+            new_names = []
+            for subclass, sub_names in names.items():
+                new_names.extend(sub_names)
+            names = new_names
+        
+        for name in names:
+            if name in context.scene.nwn_props.animations:
+                continue
+            anim_ob = scene.nwn_props.animations.add()
+            anim_ob.name = name
+            anim_ob.start_frame = start_frame
+            anim_ob.end_frame = last_frame
+            anim_ob.animroot = self.animation_root
+            start_frame = last_frame + ANIMATION_FRAME_GAP
+            last_frame = start_frame + self.length
+        
+        context.area.tag_redraw() #force the gui to redraw
+        
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
 class OBJECT_OT_create_walkmesh_materials(bpy.types.Operator):
     bl_idname ="object.nwn_add_walkmesh_materials"
     bl_label = "Add Walkmesh materials"
     bl_description = "Adds walkmesh materials for the selected mesh object"
-    
     
     @classmethod
     def poll(cls, context):
