@@ -297,11 +297,10 @@ class Animation(bpy.types.PropertyGroup):
     start_frame = property(get_start_frame, set_start_frame)
 
 class BorealisBasicProperties(bpy.types.PropertyGroup):
-    classification = bpy.props.EnumProperty(items = [("effects","Effects","Effects"),
-                                                     ("character","Character","character"),
-                                                     ("item","Item","Item"),
-                                                     ("tile","Tile","tile")],
-                                            default = "character",
+    def get_classification_items(self, context):
+        return [(c, c, c) for c in basic_props.classifications]
+    
+    classification = bpy.props.EnumProperty(items = get_classification_items,
                                             name = "Classification",
                                             description = "The classification of the current model")
     supermodel = bpy.props.StringProperty(name = "Supermodel")

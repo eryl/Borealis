@@ -1,24 +1,57 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+'''
+Contains all animation names used by Neverwinter Nights.
+
+@author: Erik Ylipää
+'''
+
 names = {}
+
+def construct_names():
+    if names:
+        return
+    for group in [items, door,  effect, tile, gui]:
+        for animation, dict in group.items():
+            for class_name in dict["classes"]:
+                class_name = class_name.lower()
+                if class_name not in names:
+                    names[class_name] = []
+                names[class_name].append(animation)
+    names["character"] = {}
+    for group in [character_player_full, character_simple_large]:
+        for animation, dict in group.items():
+            for class_name in dict["classes"]:
+                class_name = class_name.lower()
+                if class_name not in names["character"]:
+                    names["character"][class_name] = []
+                names["character"][class_name].append(animation)
+
 def get_names():
     if not names:
-        for group in [items, door,  effect, tile, gui]:
-            for animation, dict in group.items():
-                for class_name in dict["classes"]:
-                    class_name = class_name.lower()
-                    if class_name not in names:
-                        names[class_name] = []
-                    names[class_name].append(animation)
-        names["character"] = {}
-        for group in [character_player_full, character_simple_large]:
-            for animation, dict in group.items():
-                for class_name in dict["classes"]:
-                    class_name = class_name.lower()
-                    if class_name not in names["character"]:
-                        names["character"][class_name] = []
-                    names["character"][class_name].append(animation)
-                
+        construct_names()
     return names
 
+def get_names_by_classification(classification):
+    if not names:
+        construct_names()
+    return names[classification]
 
 items = {
     'default': {'classes': ['Item']},
