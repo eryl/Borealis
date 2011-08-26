@@ -16,7 +16,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# <pep8 compliant>
+
 bl_info = {
     'name': 'Neverwinter Mdl importer/exporter',
     'author': 'Erik Ylipää',
@@ -24,7 +24,7 @@ bl_info = {
     'blender': (2, 5, 8),
     'location': 'File > Import-Export > Neverwinter',
     'description': 'Import and Export Bioware Neverwinter Nights Models files (.mdl)',
-    'warning': '', # used for warning icon and text in addons panel
+    'warning': '',  # used for warning icon and text in addons panel
     'wiki_url': '',
     'tracker_url': '',
     'category': 'Import-Export'}
@@ -40,25 +40,30 @@ from . import operators
 from . import mdl_import
 from . import mdl_export
 
+
 def register():
     bpy.utils.register_module(__name__)
     blend_props.register()
-    
+
     bpy.types.INFO_MT_file_import.append(menu_import)
     bpy.types.INFO_MT_file_export.append(menu_export)
- 
+
+
 def unregister():
     bpy.utils.unregister_module(__name__)
     bpy.types.INFO_MT_file_import.remove(menu_import)
     bpy.types.INFO_MT_file_export.remove(menu_export)
- 
+
+
 def menu_import(self, context):
     self.layout.operator(BorealisImport.bl_idname, text="Nwn Mdl(.mdl)").filepath = "*.mdl"
+
 
 def menu_export(self, context):
     import os
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".mdl"
     self.layout.operator(mdl_export.BorealisExport.bl_idname, text="Nwn Mdl(.mdl)").filepath = default_path
+
 
 if __name__ == "__main__":
     register()
