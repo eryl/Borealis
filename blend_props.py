@@ -298,7 +298,7 @@ class Animation(bpy.types.PropertyGroup):
 
 class BorealisBasicProperties(bpy.types.PropertyGroup):
     def get_classification_items(self, context):
-        return [(c, c, c) for c in basic_props.classifications]
+        return [(c.lower(), c, c) for c in basic_props.classifications]
     
     classification = bpy.props.EnumProperty(items = get_classification_items,
                                             name = "Classification",

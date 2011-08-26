@@ -245,7 +245,7 @@ class SCENE_OT_add_nwn_anim_set(bpy.types.Operator):
     bl_idname = "scene.add_nwn_anim_set"
     bl_label = "Add all animations"
     def get_categories(self, context):
-        classification = context.scene.nwn_props.classification
+        classification = context.scene.nwn_props.classification.lower()
         names = animation_names.get_names()[classification]
         if isinstance(names, dict):
             items=[(item, item, item) for item in names.keys()]
@@ -276,7 +276,7 @@ class SCENE_OT_add_nwn_anim_set(bpy.types.Operator):
         start_frame = last_frame + ANIMATION_FRAME_GAP
         last_frame = start_frame + self.length
         
-        classification = context.scene.nwn_props.classification
+        classification = context.scene.nwn_props.classification.lower()
         names = animation_names.get_names()[classification]
         if classification.lower() == "character":
             new_names = []
